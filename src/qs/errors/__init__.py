@@ -1,0 +1,41 @@
+"""Error definitions for Quiz Solver."""
+
+from qs.errors.exceptions import (
+    BrowserSessionError,
+    ConfigurationError,
+    DomExtractionError,
+    ElementNotInteractableError,
+    FillerError,
+    InjectionFailedError,
+    LLMAuthenticationError,
+    LLMInferenceError,
+    LLMParsingError,
+    LLMRateLimitError,
+    MissingAPIKeyError,
+    PageNavigationError,
+    QuestionNotFoundError,
+    QuizSolverError,
+    ScraperError,
+    ScreenshotCaptureError,
+    UnsupportedQuestionTypeError,
+)
+
+__all__ = [
+    "BrowserSessionError",
+    "ConfigurationError",
+    "DomExtractionError",
+    "ElementNotInteractableError",
+    "FillerError",
+    "InjectionFailedError",
+    "LLMAuthenticationError",
+    "LLMInferenceError",
+    "LLMParsingError",
+    "LLMRateLimitError",
+    "MissingAPIKeyError",
+    "PageNavigationError",
+    "QuestionNotFoundError",
+    "QuizSolverError",
+    "ScraperError",
+    "ScreenshotCaptureError",
+    "UnsupportedQuestionTypeError",
+]

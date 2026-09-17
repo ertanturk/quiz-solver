@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling>=1.32.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quiz-solver"
+dynamic = ["version"]
+description = "Blackboard Ultra Quiz Solver"
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "MIT" }
+authors = [
+    { name = "Ertan Tunç Türk" },
+]
+dependencies = [
+    "google-genai>=2.23.0",
+    "keyring>=25.7.0",
+    "pillow>=12.3.0",
+    "playwright>=1.63.0",
+    "pydantic>=2.13.5",
+    "rich>=15.0.0",
+]
+
+[tool.hatch.version]
+path = "src/qs/__init__.py"
+
+[project.scripts]
+qs = "qs.cli.app:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.8",
+    "ty>=0.0.81",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qs"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore:'_UnionGenericAlias' is deprecated and slated for removal in Python 3.17:DeprecationWarning:google.genai.types",
+]
+
+[tool.ty.environment]
+python-version = "3.14"

@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assessment: Midterm Quiz - Blackboard Learn Ultra</title>
+  <style>
+    :root {
+      --bb-bg: #f7f7f7;
+      --bb-card-bg: #ffffff;
+      --bb-border: #e0e0e0;
+      --bb-border-subtle: #ebebeb;
+      --bb-text-primary: #262626;
+      --bb-text-secondary: #595959;
+      --bb-text-muted: #707070;
+      --bb-brand-purple: #8b347e;
+      --bb-brand-purple-light: #f3e8f4;
+      --bb-brand-blue: #0066cc;
+      --bb-active-teal: #007377;
+      --bb-success: #2e7d32;
+      --bb-selected-bg: #1c1c1c;
+      --bb-selected-text: #ffffff;
+      --bb-alert-bg: #e6f7ff;
+      --bb-alert-border: #91d5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bb-bg);
+      color: var(--bb-text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top App Bar */
+    .ultra-top-bar {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--bb-border);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .bb-close-assessment-btn {
+      width: 36px;
+      height: 36px;
+      background-color: var(--bb-brand-purple);
+      border: none;
+      border-radius: 4px;
+      color: #ffffff;
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.15s ease;
+    }
+
+    .bb-close-assessment-btn:hover {
+      background-color: #722967;
+    }
+
+    .header-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .course-subtitle {
+      font-size: 13px;
+      color: var(--bb-text-secondary);
+      font-weight: 400;
+    }
+
+    .assessment-main-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--bb-text-primary);
+      line-height: 1.2;
+    }
+
+    /* Notice Banner */
+    .notice-banner-wrapper {
+      max-width: 1280px;
+      margin: 16px auto 0 auto;
+      padding: 0 32px;
+    }
+
+    .notice-banner {
+      background-color: var(--bb-alert-bg);
+      border: 1px solid var(--bb-alert-border);
+      border-radius: 4px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .notice-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--bb-text-primary);
+    }
+
+    .notice-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--bb-brand-blue);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      font-style: italic;
+      flex-shrink: 0;
+    }
+
+    .notice-dismiss-btn {
+      background-color: #ffffff;
+      border: 1px solid var(--bb-text-secondary);
+      border-radius: 4px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--bb-text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .notice-dismiss-btn:hover {
+      background-color: #f0f0f0;
+    }
+
+    /* Two-Column Grid Layout */
+    .assessment-layout {
+      max-width: 1280px;
+      margin: 20px auto 40px auto;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .assessment-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Column: Test Content */
+    .assessment-main-content {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Progress & Timer Bar */
+    .progress-timer-section {
+      background: transparent;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-track {
+      width: 100%;
+      height: 6px;
+      background-color: var(--bb-brand-purple-light);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background-color: var(--bb-brand-purple);
+      transition: width 0.3s ease;
+    }
+
+    .timer-and-remaining-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--bb-text-secondary);
+    }
+
+    .timer-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .timer-icon {
+      font-size: 15px;
+    }
+
+    .timer-hide-btn {
+      background: none;
+      border: none;
+      color: var(--bb-text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+
+    .questions-remaining-badge {
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+
+    /* Test Content Intro Block */
+    .test-content-intro {
+      background: var(--bb-card-bg);
+      border: 1px solid var(--bb-border);
+      border-radius: 4px;
+      padding: 20px 24px;
+    }
+
+    .test-content-heading {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--bb-text-primary);
+    }
+
+    .test-content-text {
+      font-size: 14px;
+      color: var(--bb-text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Question Cards */
+    .element-card, .question-card {
+      background: var(--bb-card-bg);
+      border: 1px solid var(--bb-border);
+      border-radius: 4px;
+      padding: 24px;
+      position: relative;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .question-card.is-active,
+    .question-card:focus-within {
+      outline: 2px solid var(--bb-active-teal);
+      outline-offset: -2px;
+    }
+
+    .question-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .question-number-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--bb-text-primary);
+    }
+
+    .points-badge {
+      border: 1px solid var(--bb-text-muted);
+      border-radius: 16px;
+      padding: 3px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--bb-text-primary);
+      background: #ffffff;
+    }
+
+    .question-prompt {
+      font-size: 15px;
+      color: var(--bb-text-primary);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Choice List (Single Choice & Multiple Choice) */
+    .choices-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .choice-item {
+      position: relative;
+      background-color: #f7f7f7;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.15s ease, color 0.15s ease;
+      user-select: none;
+    }
+
+    .choice-item:hover {
+      background-color: #eeeeee;
+    }
+
+    .choice-item.is-selected {
+      background-color: var(--bb-selected-bg) !important;
+      color: var(--bb-selected-text) !important;
+    }
+
+    .choice-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .choice-letter-badge {
+      width: 26px;
+      height: 26px;
+      border: 1.5px solid var(--bb-text-primary);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .choice-item.is-selected .choice-letter-badge {
+      border-color: #ffffff;
+      color: #ffffff;
+    }
+
+    .choice-item input[type="radio"],
+    .choice-item input[type="checkbox"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      margin: 0;
+      z-index: 1;
+    }
+
+    .choice-text {
+      font-size: 14px;
+      font-weight: 400;
+      flex: 1;
+    }
+
+    .choice-item.is-selected .choice-text {
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    /* Clear Selection Link */
+    .clear-selection-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .clear-selection-btn {
+      background: none;
+      border: none;
+      color: var(--bb-brand-blue);
+      font-size: 13px;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .clear-selection-btn:hover {
+      color: #004c99;
+    }
+
+    /* Fill in the Blank Styling */
+    .fib-container {
+      background: #fafafa;
+      border: 1px solid var(--bb-border);
+      border-radius: 4px;
+      padding: 18px 20px;
+      margin-top: 10px;
+    }
+
+    .fib-sentence {
+      font-size: 15px;
+      line-height: 2.2;
+      color: var(--bb-text-primary);
+    }
+
+    .fib-input {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 14px;
+      border: 1px solid var(--bb-text-muted);
+      border-radius: 4px;
+      min-width: 190px;
+      outline: none;
+      background: #ffffff;
+      color: var(--bb-text-primary);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      vertical-align: middle;
+      margin: 0 4px;
+    }
+
+    .fib-input:focus {
+      border-color: var(--bb-brand-blue);
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    }
+
+    /* Matching Question Layout (Video 2: 00:48, Video 1: 24:15 & 27:07) */
+    .matching-container {
+      margin-top: 12px;
+    }
+
+    .matching-header-row {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 16px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bb-text-primary);
+    }
+
+    .matching-row {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .matching-prompt-box {
+      background: #f7f7f7;
+      border-radius: 4px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 48px;
+    }
+
+    .matching-prompt-index {
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid var(--bb-text-primary);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .matching-prompt-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--bb-text-primary);
+    }
+
+    .matching-answer-box {
+      position: relative;
+    }
+
+    .matching-select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid var(--bb-text-muted);
+      border-radius: 4px;
+      background-color: #ffffff;
+      cursor: pointer;
+      color: var(--bb-text-primary);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-height: 48px;
+    }
+
+    .matching-select:focus {
+      border-color: var(--bb-brand-blue);
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    }
+
+    /* Essay / Long Answer Question (Video 2: 01:00, Video 1: 23:54 & 26:26) */
+    .essay-editor-container {
+      border: 1px solid var(--bb-text-muted);
+      border-radius: 4px;
+      background: #ffffff;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .essay-toolbar {
+      background: #f9f9f9;
+      border-bottom: 1px solid var(--bb-border);
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tb-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--bb-text-primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+    }
+
+    .tb-btn:hover {
+      background: #e6e6e6;
+    }
+
+    .tb-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--bb-border);
+      margin: 0 4px;
+    }
+
+    .essay-textarea {
+      width: 100%;
+      min-height: 130px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      border: none;
+      outline: none;
+      resize: vertical;
+      color: var(--bb-text-primary);
+      background: #ffffff;
+    }
+
+    .essay-textarea::placeholder {
+      font-style: italic;
+      color: var(--bb-text-muted);
+    }
+
+    .essay-shortcut-hint {
+      background: #e9ecef;
+      border-top: 1px solid var(--bb-border);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-style: italic;
+      color: var(--bb-text-secondary);
+    }
+
+    .essay-word-count {
+      font-size: 12px;
+      color: var(--bb-text-secondary);
+      margin-top: 6px;
+    }
+
+    /* Right Column: Details & Information Sidebar */
+    .details-info-sidebar {
+      background: var(--bb-card-bg);
+      border: 1px solid var(--bb-border);
+      border-radius: 4px;
+      padding: 24px;
+    }
+
+    .sidebar-heading {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--bb-text-primary);
+    }
+
+    .sidebar-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--bb-border);
+    }
+
+    .sidebar-item:first-of-type {
+      padding-top: 0;
+    }
+
+    .sidebar-item:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar-icon {
+      font-size: 20px;
+      color: var(--bb-text-primary);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .sidebar-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--bb-text-primary);
+    }
+
+    .sidebar-subtext {
+      font-size: 13px;
+      color: var(--bb-text-secondary);
+    }
+
+    .grading-box {
+      margin-top: 12px;
+      border: 1px solid var(--bb-border);
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      overflow: hidden;
+    }
+
+    .grading-label-cell {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #fafafa;
+    }
+
+    .grading-points-cell {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--bb-text-secondary);
+      border-left: 1px solid var(--bb-border);
+      background: #ffffff;
+    }
+
+    /* Bottom Fixed Action Bar */
+    .assessment-bottom-bar {
+      position: sticky;
+      bottom: 0;
+      background: #ffffff;
+      border-top: 1px solid var(--bb-border);
+      padding: 14px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .bottom-bar-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+
+    .last-saved-text {
+      font-size: 12px;
+      color: var(--bb-text-secondary);
+    }
+
+    .questions-filter-btn {
+      background: #ffffff;
+      border: 1px solid var(--bb-text-muted);
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--bb-text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .questions-filter-btn:hover {
+      background: #f5f5f5;
+    }
+
+    /* Filter Popover Menu */
+    .filter-popover {
+      display: none;
+      position: absolute;
+      bottom: 110%;
+      left: 0;
+      background: #ffffff;
+      border: 1px solid var(--bb-border);
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      padding: 16px;
+      width: 260px;
+      z-index: 1100;
+    }
+
+    .filter-popover.is-open {
+      display: block;
+    }
+
+    .filter-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--bb-text-primary);
+      margin-bottom: 8px;
+    }
+
+    .filter-option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--bb-text-primary);
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .filter-divider {
+      height: 1px;
+      background: var(--bb-border);
+      margin: 12px 0;
+    }
+
+    .filter-clear-link {
+      display: inline-block;
+      font-size: 13px;
+      color: var(--bb-brand-blue);
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .bottom-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .help-circle-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid var(--bb-text-secondary);
+      background: none;
+      color: var(--bb-text-secondary);
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .bb-action-btn {
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s ease;
+    }
+
+    .bb-save-close-btn {
+      background-color: #e0e0e0;
+      color: var(--bb-text-primary);
+    }
+
+    .bb-save-close-btn:hover {
+      background-color: #d4d4d4;
+    }
+
+    .bb-submit-btn {
+      background-color: #262626;
+      color: #ffffff;
+    }
+
+    .bb-submit-btn:hover {
+      background-color: #141414;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Blackboard Ultra Header -->
+  <header class="ultra-top-bar" data-analytics-id="assessment-header">
+    <button class="bb-close-assessment-btn" aria-label="Close assessment" title="Close">&times;</button>
+    <div class="header-titles">
+      <span class="course-subtitle">CS 301: Algorithms & Web Systems</span>
+      <h1 class="assessment-main-title">Midterm Quiz: Algorithms & Systems</h1>
+    </div>
+  </header>
+
+  <!-- Dismissible Announcement Banner (As seen in Video 1 frame 15 & Video 2 frame 6) -->
+  <div class="notice-banner-wrapper" id="notice-container">
+    <div class="notice-banner">
+      <div class="notice-banner-left">
+        <span class="notice-icon">i</span>
+        <span>This assessment contains questions that allow partial and negative credit.</span>
+      </div>
+      <button type="button" class="notice-dismiss-btn" id="dismiss-notice-btn">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- Two-Column Grid: Questions on Left, Details & Information on Right -->
+  <div class="assessment-layout">
+
+    <!-- LEFT COLUMN: Main Test Content -->
+    <main class="assessment-main-content" id="main-content" role="main" data-testid="assessment-content">
+
+      <!-- Progress & Timer Bar Section (Reference Video 2: 00:24) -->
+      <section class="progress-timer-section" aria-label="Quiz progress and timer">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="assessment-progress-bar" style="width: 0%;"></div>
+        </div>
+        <div class="timer-and-remaining-row">
+          <div class="timer-indicator">
+            <span class="timer-icon">&#9201;</span>
+            <span id="timer-text">59 minutes remaining</span>
+            <button type="button" class="timer-hide-btn" aria-label="Toggle timer visibility" title="Hide timer">&#128065;&#8260;</button>
+          </div>
+          <div class="questions-remaining-badge" id="questions-remaining-indicator">
+            6 OF 6 QUESTIONS REMAINING
+          </div>
+        </div>
+      </section>
+
+      <!-- Test Content Overview Card -->
+      <div class="test-content-intro">
+        <h2 class="test-content-heading">Test Content</h2>
+        <p class="test-content-text">
+          Answer the following questions based on your knowledge of data structures, algorithms, and web protocols. Read each question carefully and select or provide the correct answer. Ensure your answers are clear and concise.
+        </p>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- QUESTION 1: Multiple Choice (Single Answer)               -->
+      <!-- ========================================================= -->
+      <article
+        class="element-card question-card"
+        role="region"
+        aria-label="Question 1"
+        data-analytics-id="question-container"
+        data-question-id="q1"
+        data-question-type="single_choice"
+        data-testid="question-item-1"
+      >
+        <div class="question-card-header">
+          <span class="question-number-title">Question 1</span>
+          <span class="points-badge">10 Points</span>
+        </div>
+
+        <div class="question-prompt" id="q1-prompt">
+          Which of the following sorting algorithms guarantees a worst-case time complexity of <strong>O(n log n)</strong>?
+        </div>
+
+        <div class="choices-container" role="radiogroup" aria-labelledby="q1-prompt">
+          <ul class="choices-list">
+            <li class="choice-item" data-choice-value="Bubble Sort">
+              <label class="choice-label" for="q1-opt-0">
+                <span class="choice-letter-badge">A</span>
+                <input type="radio" id="q1-opt-0" name="question-q1" value="Bubble Sort" role="radio" />
+                <span class="choice-text">Bubble Sort</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="Merge Sort">
+              <label class="choice-label" for="q1-opt-1">
+                <span class="choice-letter-badge">B</span>
+                <input type="radio" id="q1-opt-1" name="question-q1" value="Merge Sort" role="radio" />
+                <span class="choice-text">Merge Sort</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="Quick Sort">
+              <label class="choice-label" for="q1-opt-2">
+                <span class="choice-letter-badge">C</span>
+                <input type="radio" id="q1-opt-2" name="question-q1" value="Quick Sort" role="radio" />
+                <span class="choice-text">Quick Sort</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="Insertion Sort">
+              <label class="choice-label" for="q1-opt-3">
+                <span class="choice-letter-badge">D</span>
+                <input type="radio" id="q1-opt-3" name="question-q1" value="Insertion Sort" role="radio" />
+                <span class="choice-text">Insertion Sort</span>
+              </label>
+            </li>
+          </ul>
+        </div>
+
+        <div class="clear-selection-wrapper">
+          <button type="button" class="clear-selection-btn" data-target-name="question-q1" style="display: none;">Clear selection</button>
+        </div>
+      </article>
+
+      <!-- ========================================================= -->
+      <!-- QUESTION 2: Multiple Answer (Multi-Select Checkboxes)     -->
+      <!-- ========================================================= -->
+      <article
+        class="element-card question-card"
+        role="region"
+        aria-label="Question 2"
+        data-analytics-id="question-container"
+        data-question-id="q2"
+        data-question-type="multiple_choice"
+        data-testid="question-item-2"
+      >
+        <div class="question-card-header">
+          <span class="question-number-title">Question 2</span>
+          <span class="points-badge">10 Points</span>
+        </div>
+
+        <div class="question-prompt" id="q2-prompt">
+          Select all data structures that operate on the FIFO (First-In, First-Out) principle or support O(1) queue insertion/removal:
+        </div>
+
+        <div class="choices-container" role="group" aria-labelledby="q2-prompt">
+          <ul class="choices-list">
+            <li class="choice-item" data-choice-value="Queue">
+              <label class="choice-label" for="q2-opt-0">
+                <span class="choice-letter-badge">A</span>
+                <input type="checkbox" id="q2-opt-0" name="question-q2" value="Queue" role="checkbox" />
+                <span class="choice-text">Queue</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="Stack">
+              <label class="choice-label" for="q2-opt-1">
+                <span class="choice-letter-badge">B</span>
+                <input type="checkbox" id="q2-opt-1" name="question-q2" value="Stack" role="checkbox" />
+                <span class="choice-text">Stack</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="Deque (Double-Ended Queue)">
+              <label class="choice-label" for="q2-opt-2">
+                <span class="choice-letter-badge">C</span>
+                <input type="checkbox" id="q2-opt-2" name="question-q2" value="Deque (Double-Ended Queue)" role="checkbox" />
+                <span class="choice-text">Deque (Double-Ended Queue)</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="Binary Search Tree">
+              <label class="choice-label" for="q2-opt-3">
+                <span class="choice-letter-badge">D</span>
+                <input type="checkbox" id="q2-opt-3" name="question-q2" value="Binary Search Tree" role="checkbox" />
+                <span class="choice-text">Binary Search Tree</span>
+              </label>
+            </li>
+          </ul>
+        </div>
+
+        <div class="clear-selection-wrapper">
+          <button type="button" class="clear-selection-btn" data-target-name="question-q2" style="display: none;">Clear selection</button>
+        </div>
+      </article>
+
+      <!-- ========================================================= -->
+      <!-- QUESTION 3: True / False                                  -->
+      <!-- ========================================================= -->
+      <article
+        class="element-card question-card"
+        role="region"
+        aria-label="Question 3"
+        data-analytics-id="question-container"
+        data-question-id="q3"
+        data-question-type="true_false"
+        data-testid="question-item-3"
+      >
+        <div class="question-card-header">
+          <span class="question-number-title">Question 3</span>
+          <span class="points-badge">5 Points</span>
+        </div>
+
+        <div class="question-prompt" id="q3-prompt">
+          HTTP is a stateless application-layer protocol.
+        </div>
+
+        <div class="choices-container" role="radiogroup" aria-labelledby="q3-prompt">
+          <ul class="choices-list">
+            <li class="choice-item" data-choice-value="True">
+              <label class="choice-label" for="q3-opt-true">
+                <span class="choice-letter-badge">A</span>
+                <input type="radio" id="q3-opt-true" name="question-q3" value="True" role="radio" />
+                <span class="choice-text">True</span>
+              </label>
+            </li>
+            <li class="choice-item" data-choice-value="False">
+              <label class="choice-label" for="q3-opt-false">
+                <span class="choice-letter-badge">B</span>
+                <input type="radio" id="q3-opt-false" name="question-q3" value="False" role="radio" />
+                <span class="choice-text">False</span>
+              </label>
+            </li>
+          </ul>
+        </div>
+
+        <div class="clear-selection-wrapper">
+          <button type="button" class="clear-selection-btn" data-target-name="question-q3" style="display: none;">Clear selection</button>
+        </div>
+      </article>
+
+      <!-- ========================================================= -->
+      <!-- QUESTION 4: Fill in the Blank                             -->
+      <!-- ========================================================= -->
+      <article
+        class="element-card question-card"
+        role="region"
+        aria-label="Question 4"
+        data-analytics-id="question-container"
+        data-question-id="q4"
+        data-question-type="fill_in_blank"
+        data-testid="question-item-4"
+      >
+        <div class="question-card-header">
+          <span class="question-number-title">Question 4</span>
+          <span class="points-badge">10 Points</span>
+        </div>
+
+        <div class="question-prompt" id="q4-prompt">
+          Complete the statement by typing the exact complexity inside the blank:
+        </div>
+
+        <div class="fib-container">
+          <p class="fib-sentence">
+            The worst-case time complexity of binary search on a sorted array of length n is O(
+            <input
+              type="text"
+              id="q4-blank-0"
+              class="fib-input"
+              aria-label="Blank 1"
+              placeholder="e.g. log n"
+              data-testid="blank-input"
+              autocomplete="off"
+            />
+            ).
+          </p>
+        </div>
+      </article>
+
+      <!-- ========================================================= -->
+      <!-- QUESTION 5: Matching Question (Video 2: 00:48, Video 1)   -->
+      <!-- ========================================================= -->
+      <article
+        class="element-card question-card"
+        role="region"
+        aria-label="Question 5"
+        data-analytics-id="question-container"
+        data-question-id="q5"
+        data-question-type="matching"
+        data-testid="question-item-5"
+      >
+        <div class="question-card-header">
+          <span class="question-number-title">Question 5</span>
+          <span class="points-badge">10 Points</span>
+        </div>
+
+        <div class="question-prompt" id="q5-prompt">
+          Match each network protocol with its standard default port (includes distractors):
+        </div>
+
+        <div class="matching-container">
+          <div class="matching-header-row">
+            <span>Prompts</span>
+            <span>Answers</span>
+          </div>
+
+          <!-- Matching Item 1: HTTP -->
+          <div class="matching-row" data-match-row="HTTP">
+            <div class="matching-prompt-box">
+              <span class="matching-prompt-index">1</span>
+              <span class="matching-prompt-text">HTTP</span>
+            </div>
+            <div class="matching-answer-box">
+              <select
+                class="matching-select"
+                id="q5-match-0"
+                aria-label="Match for HTTP"
+                data-testid="match-select-http"
+              >
+                <option value="">Select match</option>
+                <option value="Port 80">Port 80</option>
+                <option value="Port 443">Port 443</option>
+                <option value="Port 22">Port 22</option>
+                <option value="Port 53 (Distractor)">Port 53 (Distractor)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Matching Item 2: HTTPS -->
+          <div class="matching-row" data-match-row="HTTPS">
+            <div class="matching-prompt-box">
+              <span class="matching-prompt-index">2</span>
+              <span class="matching-prompt-text">HTTPS</span>
+            </div>
+            <div class="matching-answer-box">
+              <select
+                class="matching-select"
+                id="q5-match-1"
+                aria-label="Match for HTTPS"
+                data-testid="match-select-https"
+              >
+                <option value="">Select match</option>
+                <option value="Port 80">Port 80</option>
+                <option value="Port 443">Port 443</option>
+                <option value="Port 22">Port 22</option>
+                <option value="Port 53 (Distractor)">Port 53 (Distractor)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Matching Item 3: SSH -->
+          <div class="matching-row" data-match-row="SSH">
+            <div class="matching-prompt-box">
+              <span class="matching-prompt-index">3</span>
+              <span class="matching-prompt-text">SSH</span>
+            </div>
+            <div class="matching-answer-box">
+              <select
+                class="matching-select"
+                id="q5-match-2"
+                aria-label="Match for SSH"
+                data-testid="match-select-ssh"
+              >
+                <option value="">Select match</option>
+                <option value="Port 80">Port 80</option>
+                <option value="Port 443">Port 443</option>
+                <option value="Port 22">Port 22</option>
+                <option value="Port 53 (Distractor)">Port 53 (Distractor)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ========================================================= -->
+      <!-- QUESTION 6: Essay / Written Response (Video 2: 01:00)     -->
+      <!-- ========================================================= -->
+      <article
+        class="element-card question-card"
+        role="region"
+        aria-label="Question 6"
+        data-analytics-id="question-container"
+        data-question-id="q6"
+        data-question-type="essay"
+        data-testid="question-item-6"
+      >
+        <div class="question-card-header">
+          <span class="question-number-title">Question 6</span>
+          <span class="points-badge">5 Points</span>
+        </div>
+
+        <div class="question-prompt" id="q6-prompt">
+          Explain why an in-memory hash table lookup is average-case O(1) but can degrade to O(n) under adverse hashing conditions.
+        </div>
+
+        <div class="essay-editor-container">
+          <!-- Editor Toolbar -->
+          <div class="essay-toolbar" role="toolbar" aria-label="Rich text editor toolbar">
+            <button type="button" class="tb-btn" title="Text format">T&#9662;</button>
+            <span class="tb-divider"></span>
+            <button type="button" class="tb-btn" title="Bold"><strong>B</strong></button>
+            <button type="button" class="tb-btn" title="Italic"><em>I</em></button>
+            <button type="button" class="tb-btn" title="Underline"><u>U</u></button>
+            <button type="button" class="tb-btn" title="More formatting">&middot;&middot;&middot;</button>
+            <span class="tb-divider"></span>
+            <button type="button" class="tb-btn" title="Alignment">&#8801;&#9662;</button>
+            <button type="button" class="tb-btn" title="List">&para;&#9662;</button>
+            <span class="tb-divider"></span>
+            <button type="button" class="tb-btn" title="Insert link">&#128279;</button>
+            <button type="button" class="tb-btn" title="Attach file">&#128206;</button>
+            <button type="button" class="tb-btn" title="Insert image">&#128444;</button>
+            <button type="button" class="tb-btn" title="Insert formula / math">&oplus;&#9662;</button>
+          </div>
+
+          <!-- Textarea Content Area -->
+          <textarea
+            class="essay-textarea"
+            id="q6-essay-input"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Essay response input"
+            placeholder="Use the editor to format your answer"
+            data-testid="essay-input"
+          ></textarea>
+
+          <!-- Accessible Keyboard Hint -->
+          <div class="essay-shortcut-hint">
+            Press FN + Option + F10 to access toolbar options
+          </div>
+        </div>
+
+        <div class="essay-word-count" id="q6-word-count">
+          Word count: 0
+        </div>
+      </article>
+
+    </main>
+
+    <!-- RIGHT COLUMN: Details & Information Sidebar (As seen in Video 2: 00:15 & Video 1) -->
+    <aside class="details-info-sidebar" aria-label="Assessment details and information">
+      <h2 class="sidebar-heading">Details & Information</h2>
+
+      <!-- Due date item -->
+      <div class="sidebar-item">
+        <span class="sidebar-icon" aria-hidden="true">&#128197;</span>
+        <div class="sidebar-content">
+          <span class="sidebar-label">Assessment due date</span>
+          <span class="sidebar-subtext">10/24/26, 11:59 PM (EDT)</span>
+        </div>
+      </div>
+
+      <!-- Time limit item -->
+      <div class="sidebar-item">
+        <span class="sidebar-icon" aria-hidden="true">&#9203;</span>
+        <div class="sidebar-content">
+          <span class="sidebar-label">Time limit</span>
+          <span class="sidebar-subtext">60 minutes | Automatic submission</span>
+        </div>
+      </div>
+
+      <!-- Attempts item -->
+      <div class="sidebar-item">
+        <span class="sidebar-icon" aria-hidden="true">&#9745;</span>
+        <div class="sidebar-content">
+          <span class="sidebar-label">Attempts</span>
+          <span class="sidebar-subtext">1 attempt left</span>
+        </div>
+      </div>
+
+      <!-- Grading item -->
+      <div class="sidebar-item" style="flex-direction: column; gap: 8px;">
+        <span class="sidebar-label">Grading</span>
+        <div class="grading-box">
+          <div class="grading-label-cell">
+            <span aria-hidden="true">&#128221;</span>
+            <span>Maximum points</span>
+          </div>
+          <div class="grading-points-cell">
+            50 points
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Sticky Bottom Navigation Bar (As seen in Video 2: 00:28 & Video 1) -->
+  <footer class="assessment-bottom-bar">
+    <div class="bottom-bar-left">
+      <span class="last-saved-text" id="global-last-saved">Last saved 11:17:27 AM</span>
+      <button type="button" class="questions-filter-btn" id="filter-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+        <span>Questions Filter (6)</span>
+        <span style="font-size: 10px;">&#9660;</span>
+      </button>
+
+      <!-- Questions Filter Popover -->
+      <div class="filter-popover" id="filter-popover-menu" role="menu">
+        <div class="filter-section-title">Navigate:</div>
+        <label class="filter-option-row">
+          <input type="radio" name="filter-nav" value="all" checked />
+          <span>All questions</span>
+        </label>
+        <label class="filter-option-row">
+          <input type="radio" name="filter-nav" value="unanswered" />
+          <span>Unanswered questions</span>
+        </label>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-section-title">Filter question types:</div>
+        <label class="filter-option-row">
+          <input type="checkbox" id="filter-essay-only" />
+          <span>Essay questions only</span>
+        </label>
+
+        <div class="filter-divider"></div>
+
+        <a href="#" class="filter-clear-link" id="clear-filters-link">Clear filters</a>
+      </div>
+    </div>
+
+    <div class="bottom-bar-right">
+      <button type="button" class="help-circle-btn" aria-label="Help and resources" title="Help">?</button>
+      <button type="button" class="bb-action-btn bb-save-close-btn" id="save-close-btn">Save and Close</button>
+      <button type="button" class="bb-action-btn bb-submit-btn" id="submit-quiz-btn">Submit</button>
+    </div>
+  </footer>
+
+  <!-- Assessment Engine Script (Simulating Blackboard Ultra state, events, auto-saving) -->
+  <script>
+    (function () {
+      const TOTAL_QUESTIONS = 6;
+      const lastSavedEl = document.getElementById('global-last-saved');
+      const progressFill = document.getElementById('assessment-progress-bar');
+      const remainingIndicator = document.getElementById('questions-remaining-indicator');
+
+      function formatTimestamp() {
+        const d = new Date();
+        let hours = d.getHours();
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        return `Last saved ${hours}:${minutes}:${seconds} ${ampm}`;
+      }
+
+      function updateAutoSave() {
+        if (lastSavedEl) {
+          lastSavedEl.textContent = formatTimestamp();
+        }
+        updateProgress();
+      }
+
+      function isQuestionAnswered(card) {
+        const type = card.getAttribute('data-question-type');
+        if (type === 'single_choice' || type === 'true_false') {
+          return card.querySelector('input[type="radio"]:checked') !== null;
+        } else if (type === 'multiple_choice') {
+          return card.querySelector('input[type="checkbox"]:checked') !== null;
+        } else if (type === 'fill_in_blank') {
+          const input = card.querySelector('.fib-input');
+          return input && input.value.trim().length > 0;
+        } else if (type === 'matching') {
+          const selects = card.querySelectorAll('.matching-select');
+          return Array.from(selects).some(s => s.value !== '');
+        } else if (type === 'essay') {
+          const textarea = card.querySelector('.essay-textarea');
+          return textarea && textarea.value.trim().length > 0;
+        }
+        return false;
+      }
+
+      function updateProgress() {
+        const cards = document.querySelectorAll('.question-card');
+        let answeredCount = 0;
+        cards.forEach(card => {
+          if (isQuestionAnswered(card)) answeredCount++;
+        });
+
+        const remaining = TOTAL_QUESTIONS - answeredCount;
+        if (remainingIndicator) {
+          remainingIndicator.textContent = `${remaining} OF ${TOTAL_QUESTIONS} QUESTIONS REMAINING`;
+        }
+        if (progressFill) {
+          const pct = Math.round((answeredCount / TOTAL_QUESTIONS) * 100);
+          progressFill.style.width = pct + '%';
+        }
+      }
+
+      // Card active highlight on focus or click
+      document.querySelectorAll('.question-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.question-card').forEach(c => c.classList.remove('is-active'));
+          card.classList.add('is-active');
+        });
+      });
+
+      // Single Choice and True/False Radio Buttons
+      document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          const name = radio.getAttribute('name');
+          // Clear selected styling from siblings
+          document.querySelectorAll(`input[name="${name}"]`).forEach(sibling => {
+            const item = sibling.closest('.choice-item');
+            if (item) item.classList.remove('is-selected');
+          });
+          // Add selected styling
+          const parentItem = radio.closest('.choice-item');
+          if (parentItem && radio.checked) {
+            parentItem.classList.add('is-selected');
+          }
+          // Show Clear selection button
+          const card = radio.closest('.question-card');
+          const clearBtn = card ? card.querySelector('.clear-selection-btn') : null;
+          if (clearBtn) clearBtn.style.display = 'inline-block';
+
+          updateAutoSave();
+        });
+      });
+
+      // Multiple Choice Checkboxes
+      document.querySelectorAll('input[type="checkbox"][name]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          const parentItem = checkbox.closest('.choice-item');
+          if (parentItem) {
+            if (checkbox.checked) {
+              parentItem.classList.add('is-selected');
+            } else {
+              parentItem.classList.remove('is-selected');
+            }
+          }
+          const card = checkbox.closest('.question-card');
+          const clearBtn = card ? card.querySelector('.clear-selection-btn') : null;
+          if (clearBtn) {
+            const anyChecked = card.querySelector('input[type="checkbox"]:checked') !== null;
+            clearBtn.style.display = anyChecked ? 'inline-block' : 'none';
+          }
+          updateAutoSave();
+        });
+      });
+
+      // Clear selection buttons
+      document.querySelectorAll('.clear-selection-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetName = btn.getAttribute('data-target-name');
+          const inputs = document.querySelectorAll(`input[name="${targetName}"]`);
+          inputs.forEach(input => {
+            input.checked = false;
+            const item = input.closest('.choice-item');
+            if (item) item.classList.remove('is-selected');
+          });
+          btn.style.display = 'none';
+          updateAutoSave();
+        });
+      });
+
+      // Fill in the Blank
+      const fibInput = document.getElementById('q4-blank-0');
+      if (fibInput) {
+        let timer;
+        fibInput.addEventListener('input', () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => updateAutoSave(), 1500);
+        });
+        fibInput.addEventListener('change', updateAutoSave);
+        fibInput.addEventListener('blur', updateAutoSave);
+      }
+
+      // Matching Selects
+      document.querySelectorAll('.matching-select').forEach(select => {
+        select.addEventListener('change', updateAutoSave);
+      });
+
+      // Essay Input & Word Counter (Video 2: 01:00)
+      const essayInput = document.getElementById('q6-essay-input');
+      const wordCountEl = document.getElementById('q6-word-count');
+      if (essayInput) {
+        let essayTimer;
+        essayInput.addEventListener('input', (e) => {
+          const text = e.target.value.trim();
+          const words = text.length > 0 ? text.split(/\s+/).length : 0;
+          if (wordCountEl) {
+            wordCountEl.textContent = `Word count: ${words}`;
+          }
+          clearTimeout(essayTimer);
+          essayTimer = setTimeout(() => updateAutoSave(), 2000);
+        });
+        essayInput.addEventListener('blur', updateAutoSave);
+      }
+
+      // Dismiss announcement banner
+      const dismissBtn = document.getElementById('dismiss-notice-btn');
+      const noticeContainer = document.getElementById('notice-container');
+      if (dismissBtn && noticeContainer) {
+        dismissBtn.addEventListener('click', () => {
+          noticeContainer.style.display = 'none';
+        });
+      }
+
+      // Questions Filter Popover
+      const filterBtn = document.getElementById('filter-dropdown-trigger');
+      const filterMenu = document.getElementById('filter-popover-menu');
+      if (filterBtn && filterMenu) {
+        filterBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isOpen = filterMenu.classList.toggle('is-open');
+          filterBtn.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!filterMenu.contains(e.target) && e.target !== filterBtn) {
+            filterMenu.classList.remove('is-open');
+            filterBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        // Filter Radios & Checkbox
+        const allQuestionsRadio = document.querySelector('input[name="filter-nav"][value="all"]');
+        const unansweredRadio = document.querySelector('input[name="filter-nav"][value="unanswered"]');
+        const essayOnlyCheck = document.getElementById('filter-essay-only');
+        const clearFiltersLink = document.getElementById('clear-filters-link');
+
+        function applyQuestionFilters() {
+          const onlyUnanswered = unansweredRadio && unansweredRadio.checked;
+          const onlyEssay = essayOnlyCheck && essayOnlyCheck.checked;
+
+          document.querySelectorAll('.question-card').forEach(card => {
+            const type = card.getAttribute('data-question-type');
+            const answered = isQuestionAnswered(card);
+
+            let visible = true;
+            if (onlyUnanswered && answered) visible = false;
+            if (onlyEssay && type !== 'essay') visible = false;
+
+            card.style.display = visible ? 'block' : 'none';
+          });
+        }
+
+        if (allQuestionsRadio) allQuestionsRadio.addEventListener('change', applyQuestionFilters);
+        if (unansweredRadio) unansweredRadio.addEventListener('change', applyQuestionFilters);
+        if (essayOnlyCheck) essayOnlyCheck.addEventListener('change', applyQuestionFilters);
+
+        if (clearFiltersLink) {
+          clearFiltersLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (allQuestionsRadio) allQuestionsRadio.checked = true;
+            if (essayOnlyCheck) essayOnlyCheck.checked = false;
+            applyQuestionFilters();
+          });
+        }
+      }
+
+      // Initialize
+      updateProgress();
+    })();
+  </script>
+</body>
+</html>
