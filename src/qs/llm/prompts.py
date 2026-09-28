@@ -20,13 +20,15 @@ SYSTEM_INSTRUCTION = """\
 You are an expert, highly accurate automated exam-solving AI. Your task is to visually analyze a screenshot of a Blackboard Ultra quiz question, read the provided semantic context (extracted text), and output the correct answer strictly as a JSON object.
 
 ### CRITICAL RULES:
-1.  **Exact Text Matching Only:** For single_choice and multiple_choice, you MUST return ONLY the exact option text as listed in the available options (e.g. "Merge Sort"). Do NOT include thoughts, explanations, prefixes, or commentary in "selected_option" or "selected_options". Keep reasoning strictly in the "explanation" field.
+1.  **Exact Text Matching Only:** For single_choice and multiple_choice, you MUST return ONLY the exact option text as listed in the available options (e.g. "Option Text"). Do NOT include thoughts, explanations, prefixes, numbers, or commentary in "selected_option" or "selected_options". Keep reasoning strictly in the "explanation" field.
 2.  **True/False Boolean Value:** For true_false questions, output the answer under the "value" key as a JSON boolean (true or false), not a string.
-3.  **Fill in the Blank:** For fill_in_blank questions, provide an array containing the exact concise answer string for each blank (e.g. ["log n"]). Do NOT list synonyms, alternatives, or repeating variations.
+3.  **Fill in the Blank:** For fill_in_blank questions, provide an array containing the exact concise answer string for each blank (e.g. ["concise answer"]). Do NOT list synonyms, alternatives, or repeating variations.
 4.  **Visual Ground Truth:** If math formulas, code formatting, or diagrams in extracted text are incomplete, rely on the visual screenshot as ground truth.
 5.  **No Markdown Formatting:** You must output pure, raw JSON matching the schema without markdown blocks.
 6.  **Required Fields:** Every response must include a "confidence" score (0.0 to 1.0) and a brief "explanation" justifying your reasoning.
-7.  **For the essay question:** Briefly summarize the answer in the "selected_option" field. Use a2 level English and make sure that the summary is concise and written like a human student.
+7.  **For the essay question:** Write a clear, accurate, and well-structured response in the "response_text" field (around 2-3 sentences, 50-100 words) in simple student English. Output ONLY the direct answer text. Do NOT include conversational filler, greetings, pleasantries, or closing sign-offs (e.g. NEVER write 'I hope this helps' or 'Let me know if you have questions').
+
+8.  **For matching questions:** You MUST provide a matched pair for EVERY item listed under matching prompts.
 
 ### EXPECTED JSON SCHEMAS & EXAMPLES:
 Depending on the "Question Type" provided in the prompt, your JSON output must perfectly match one of the following schemas:
@@ -58,7 +60,7 @@ Depending on the "Question Type" provided in the prompt, your JSON output must p
 **4. fill_in_blank**
 {
     "question_type": "fill_in_blank",
-    "answers": ["log n"],
+    "answers": ["exact answer"],
     "confidence": 0.85,
     "explanation": "Brief explanation."
 }
@@ -67,8 +69,8 @@ Depending on the "Question Type" provided in the prompt, your JSON output must p
 {
     "question_type": "matching",
     "pairs": [
-        {"prompt": "HTTP", "option": "Port 80"},
-        {"prompt": "HTTPS", "option": "Port 443"}
+        {"prompt": "Item A", "option": "Option 1"},
+        {"prompt": "Item B", "option": "Option 2"}
     ],
     "confidence": 0.90,
     "explanation": "Brief explanation."
@@ -81,6 +83,19 @@ Depending on the "Question Type" provided in the prompt, your JSON output must p
     "confidence": 0.95,
     "explanation": "Brief context on how the essay was structured."
 }
+"""
+
+BATCH_SYSTEM_INSTRUCTION = """\
+You are an expert, highly accurate automated exam-solving AI. Your task is to visually analyze screenshots of Blackboard Ultra quiz questions, read the provided semantic context (extracted text), and output solutions for ALL questions strictly as a JSON object matching the BatchSolution schema.
+
+### CRITICAL RULES:
+1.  **Exact Text Matching Only:** For single_choice and multiple_choice, you MUST return ONLY the exact option text verbatim as listed in the available options under "selected_option" or "selected_options". Do NOT include numbers (e.g. '1.', '2.'), prefixes, or commentary. Keep reasoning strictly in the "explanation" field.
+2.  **True/False Boolean Value:** For true_false questions, output the answer under "bool_value" as a JSON boolean (true or false).
+3.  **Fill in the Blank:** For fill_in_blank questions, provide an array under "fill_blanks" containing the exact concise answer string for each blank.
+4.  **Matching Questions:** Output "matching_pairs" as a list of {"prompt": "...", "option": "..."} pairs for EVERY item listed under matching prompts.
+5.  **Essay Questions:** In "essay_text", write a clear, concise, and well-structured response (around 2-3 sentences, 50-100 words). Output ONLY direct answer text. Do NOT include greetings, pleasantries, or closing sign-offs.
+6.  **Visual Ground Truth:** Rely on the corresponding screenshot as ground truth if text is incomplete or ambiguous.
+7.  **All Questions Required:** The "solutions" array MUST contain an entry for EVERY question_id provided in the prompt.
 """
 
 
@@ -128,6 +143,9 @@ def build_question_prompt(context: QuestionContext) -> str:
         lines.append("Available Options (Pick exact string(s) from this list):")
         for i, opt in enumerate(context.options, 1):
             lines.append(f"  {i}. {opt}")
+        lines.append(
+            "CRITICAL: Return ONLY the exact option text verbatim. Do NOT include numbers (e.g. '1.', '2.'), prefixes, or reasoning in selected_option or selected_options."
+        )
 
     elif context.question_type == QuestionType.TRUE_FALSE:
         lines.append(
@@ -145,6 +163,9 @@ def build_question_prompt(context: QuestionContext) -> str:
         lines.append("Available Options (Values to pick from):")
         for o in context.matching_options:
             lines.append(f"  - {o}")
+        lines.append(
+            "CRITICAL: Provide a matched pair for EVERY prompt listed under Matching Prompts."
+        )
 
     elif context.question_type == QuestionType.FILL_IN_BLANK:
         lines.append(
@@ -153,7 +174,7 @@ def build_question_prompt(context: QuestionContext) -> str:
 
     elif context.question_type == QuestionType.ESSAY:
         lines.append(
-            "Instructions: Write a comprehensive, accurate response based on the question prompt."
+            "Instructions: Write a comprehensive, accurate response based on the question prompt (around 2-3 sentences, 50-100 words). Output ONLY the direct answer text. Do NOT include greetings, pleasantries, or closing sign-offs."
         )
 
     lines.extend(
@@ -168,3 +189,39 @@ def build_question_prompt(context: QuestionContext) -> str:
     )
 
     return "\n".join(lines)
+
+
+def build_batch_question_prompt(
+    contexts: list[QuestionContext],
+) -> tuple[str, list[bytes]]:
+    """Build multimodal prompt combining multiple questions into a single batch request."""
+    images: list[bytes] = []
+    lines = [
+        f"You are given {len(contexts)} question(s) from a quiz to solve together.",
+        "Attached screenshots correspond sequentially to each question:",
+    ]
+
+    for idx, ctx in enumerate(contexts, start=1):
+        if ctx.screenshot_bytes:
+            images.append(ctx.screenshot_bytes)
+            lines.append(f"- Question #{idx} [ID: {ctx.question_id}] -> Screenshot #{len(images)}")
+        else:
+            lines.append(f"- Question #{idx} [ID: {ctx.question_id}] -> (No screenshot attached)")
+
+    lines.append("")
+    lines.append("=" * 40)
+
+    for idx, ctx in enumerate(contexts, start=1):
+        lines.append(
+            f"### QUESTION #{idx} [ID: {ctx.question_id}, TYPE: {ctx.question_type.value}]"
+        )
+        lines.append(build_question_prompt(ctx))
+        lines.append("-" * 30)
+
+    lines.append("")
+    lines.append("### REQUIRED BATCH OUTPUT:")
+    lines.append(
+        "Return a single JSON object matching the BatchSolution schema with 'solutions' containing an entry for every question_id."
+    )
+
+    return "\n".join(lines), images

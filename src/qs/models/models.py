@@ -60,7 +60,9 @@ class SingleChoiceSolution(BaseSolution):
     """Solution for single-choice multiple choice questions (radio)."""
 
     question_type: Literal[QuestionType.SINGLE_CHOICE] = QuestionType.SINGLE_CHOICE
-    selected_option: str = Field(description="Exact string of the single correct choice to select")
+    selected_option: str = Field(
+        description="Exact string of the single correct choice to select. Must match choice text verbatim without numbers, prefixes, or reasoning"
+    )
 
 
 class MultipleChoiceSolution(BaseSolution):
@@ -68,7 +70,7 @@ class MultipleChoiceSolution(BaseSolution):
 
     question_type: Literal[QuestionType.MULTIPLE_CHOICE] = QuestionType.MULTIPLE_CHOICE
     selected_options: list[str] = Field(
-        description="List of exact strings for all correct choices to select"
+        description="List of exact strings for all correct choices to select. Must match choice text verbatim without numbers, prefixes, or reasoning"
     )
 
 
@@ -180,6 +182,101 @@ class GenericQuestionSolution(BaseModel):
     essay_text: str | None = Field(default=None, description="Essay written text")
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     explanation: str = Field(default="")
+
+
+class BatchQuestionItem(BaseModel):
+    """Structured solution item for a question within a batch."""
+
+    question_id: str = Field(description="Question ID reference matching prompt")
+    question_type: QuestionType = Field(description="Question type")
+    selected_option: str | None = Field(
+        default=None,
+        description="For single_choice: exact string of correct option",
+    )
+    selected_options: list[str] = Field(
+        default_factory=list,
+        description="For multiple_choice: exact strings of correct options",
+    )
+    bool_value: bool | None = Field(
+        default=None,
+        description="For true_false: boolean true or false",
+    )
+    fill_blanks: list[str] = Field(
+        default_factory=list,
+        description="For fill_in_blank: answer strings",
+    )
+    matching_pairs: list[MatchingPair] = Field(
+        default_factory=list,
+        description="For matching: matched prompt->option pairs",
+    )
+    essay_text: str | None = Field(
+        default=None,
+        description="For essay: direct written answer text",
+    )
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    explanation: str = Field(default="")
+
+    def to_solution(self) -> QuestionSolution | GenericQuestionSolution:
+        """Convert this batch item to its concrete typed solution."""
+        match self.question_type:
+            case QuestionType.SINGLE_CHOICE:
+                return SingleChoiceSolution(
+                    selected_option=self.selected_option or "",
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+            case QuestionType.MULTIPLE_CHOICE:
+                return MultipleChoiceSolution(
+                    selected_options=self.selected_options,
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+            case QuestionType.TRUE_FALSE:
+                return TrueFalseSolution(
+                    value=bool(self.bool_value) if self.bool_value is not None else True,
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+            case QuestionType.FILL_IN_BLANK:
+                return FillInBlankSolution(
+                    answers=self.fill_blanks,
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+            case QuestionType.MATCHING:
+                pairs = {p.prompt: p.option for p in self.matching_pairs}
+                return MatchingSolution(
+                    pairs=pairs,
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+            case QuestionType.ESSAY:
+                return EssaySolution(
+                    response_text=self.essay_text or "",
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+            case _:
+                return GenericQuestionSolution(
+                    question_id=self.question_id,
+                    question_type=self.question_type,
+                    selected_option=self.selected_option,
+                    selected_options=self.selected_options,
+                    bool_value=self.bool_value,
+                    fill_blanks=self.fill_blanks,
+                    matching_pairs={p.prompt: p.option for p in self.matching_pairs},
+                    essay_text=self.essay_text,
+                    confidence=self.confidence,
+                    explanation=self.explanation,
+                )
+
+
+class BatchSolution(BaseModel):
+    """Batch container for multi-question LLM responses."""
+
+    solutions: list[BatchQuestionItem] = Field(
+        description="List of solutions corresponding to each question in the batch"
+    )
 
 
 # Execution & Batch Results

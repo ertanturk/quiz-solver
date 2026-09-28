@@ -5,6 +5,7 @@
 
 > [!WARNING]
 > This tool has not been tested on real quizzes and may not work as expected. Still in development.
+> Since the project uses AI to answer the questions, it may not always provide accurate answers. Check the answers before submitting.
 
 Quiz Solver is a CLI tool for Blackboard Learn Ultra quizzes.
 It reads questions on the screen, asks Google Gemini AI for answers, and fills the form fields in your browser.

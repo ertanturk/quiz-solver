@@ -2,6 +2,8 @@
 
 from qs.models.models import (
     BaseSolution,
+    BatchQuestionItem,
+    BatchSolution,
     EssaySolution,
     FillInBlankSolution,
     GenericQuestionSolution,
@@ -22,6 +24,8 @@ from qs.models.models import (
 
 __all__ = [
     "BaseSolution",
+    "BatchQuestionItem",
+    "BatchSolution",
     "EssaySolution",
     "FillInBlankSolution",
     "GenericQuestionSolution",

@@ -25,6 +25,7 @@ from qs.errors.exceptions import (
     LLMRateLimitError,
     MissingAPIKeyError,
 )
+from qs.llm.rate_limiter import RateLimiter, get_default_rate_limiter
 from qs.logger import get_logger
 from qs.models import MatchingLLMSchema, MatchingSolution
 
@@ -336,6 +337,7 @@ def send_request(
     temperature: float = 0.2,
     max_retries: int = DEFAULT_MAX_RETRIES,
     initial_retry_delay: float = DEFAULT_INITIAL_RETRY_DELAY,
+    rate_limiter: RateLimiter | None = None,
 ) -> Any:
     """Send multimodal or text request to Gemini with retry, fallback, and validation.
 
@@ -352,6 +354,7 @@ def send_request(
         temperature: Sampling temperature (default: 0.2).
         max_retries: Maximum transient retry attempts.
         initial_retry_delay: Initial retry backoff in seconds.
+        rate_limiter: Optional RateLimiter instance to enforce quota limits.
 
     Returns:
         Structured Pydantic model instance if response_schema provided, else text string.
@@ -368,11 +371,20 @@ def send_request(
         contents=contents,
     )
 
+    if rate_limiter is not None:
+        estimated_tokens = rate_limiter.estimate_tokens(
+            prompt=prompt,
+            images=images,
+            contents=validated_contents,
+        )
+        rate_limiter.acquire(tokens=estimated_tokens)
+
     config_kwargs: dict[str, Any] = {
         "temperature": temperature,
         "automatic_function_calling": types.AutomaticFunctionCallingConfig(disable=True),
         "thinking_config": types.ThinkingConfig(thinking_budget=0),
     }
+
     if system_instruction:
         config_kwargs["system_instruction"] = system_instruction
 
@@ -448,12 +460,20 @@ class GeminiService:
         fallback_model: str | None = FALLBACK_GEMINI_MODEL,
         max_retries: int = DEFAULT_MAX_RETRIES,
         initial_retry_delay: float = DEFAULT_INITIAL_RETRY_DELAY,
+        rate_limiter: RateLimiter | None | bool = None,
     ) -> None:
         self.api_key = api_key
         self.model = model
         self.fallback_model = fallback_model
         self.max_retries = max_retries
         self.initial_retry_delay = initial_retry_delay
+        if rate_limiter is False:
+            self.rate_limiter: RateLimiter | None = None
+        elif isinstance(rate_limiter, RateLimiter):
+            self.rate_limiter = rate_limiter
+        else:
+            self.rate_limiter = get_default_rate_limiter()
+
         self._client: genai.Client | None = None
 
     @property
@@ -477,10 +497,21 @@ class GeminiService:
         temperature: float = 0.2,
         model: str | None = None,
         fallback_model: str | None = None,
+        rate_limiter: RateLimiter | None | bool = None,
     ) -> Any:
         """Send a request via this service instance."""
         target_model = model or self.model
         target_fallback = fallback_model if fallback_model is not None else self.fallback_model
+        target_limiter: RateLimiter | None
+        if rate_limiter is False:
+            target_limiter = None
+        elif isinstance(rate_limiter, RateLimiter):
+            target_limiter = rate_limiter
+        elif rate_limiter is True:
+            target_limiter = get_default_rate_limiter()
+        else:
+            target_limiter = self.rate_limiter
+
         return send_request(
             prompt=prompt,
             images=images,
@@ -493,6 +524,7 @@ class GeminiService:
             temperature=temperature,
             max_retries=self.max_retries,
             initial_retry_delay=self.initial_retry_delay,
+            rate_limiter=target_limiter,
         )
 
     def close(self) -> None:

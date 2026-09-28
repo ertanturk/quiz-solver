@@ -16,6 +16,7 @@ from qs.app.service import QuizSolverService
 from qs.cli.cli import print_banner, print_quiz_summary
 from qs.cli.theme import console
 from qs.config import DEFAULT_GEMINI_MODEL
+from qs.credentials import Credentials
 from qs.llm.google import GeminiService
 from qs.logger import setup_logger
 from qs.models import (
@@ -50,15 +51,15 @@ def _mock_gemini_solver(
         )
     if response_schema == MultipleChoiceSolution:
         return MultipleChoiceSolution(
-            selected_options=["Queue", "Stack"],
-            confidence=0.94,
-            explanation="Queue (FIFO) and Stack (LIFO) are classic linear data structures.",
+            selected_options=["Queue", "Deque (Double-Ended Queue)"],
+            confidence=0.96,
+            explanation="Queue operates on FIFO and Deque supports O(1) queue insertion/removal.",
         )
     if response_schema == TrueFalseSolution:
         return TrueFalseSolution(
             value=True,
             confidence=1.0,
-            explanation="TCP requires a three-way handshake and is connection-oriented.",
+            explanation="HTTP is a stateless application-layer protocol.",
         )
     if response_schema == FillInBlankSolution:
         return FillInBlankSolution(
@@ -113,12 +114,16 @@ def run_recorded_demo() -> int:
 
     console.print("[bold white]Blackboard Assessment Demo[/bold white]")
     console.print(f"[muted]Fixture:[/] {FIXTURE_PATH.name}")
-    console.print(
-        f"[success]Authenticated with Gemini API[/success] [muted]({DEFAULT_GEMINI_MODEL})[/muted]\n"
-    )
-
-    gemini_service = MagicMock(spec=GeminiService)
-    gemini_service.send.side_effect = _mock_gemini_solver
+    try:
+        api_key = Credentials.get_api_key()
+        gemini_service = GeminiService(api_key=api_key)
+        console.print(
+            f"[success]Authenticated with Gemini API[/success] [muted]({DEFAULT_GEMINI_MODEL})[/muted]\n"
+        )
+    except Exception:
+        console.print("[muted]Running with mock reasoning (offline)[/muted]\n")
+        gemini_service = MagicMock(spec=GeminiService)
+        gemini_service.send.side_effect = _mock_gemini_solver
 
     # Clear previous recordings in recording dir
     RECORDING_DIR.mkdir(parents=True, exist_ok=True)

@@ -63,15 +63,15 @@ def _mock_gemini_solver(
         )
     if response_schema == MultipleChoiceSolution:
         return MultipleChoiceSolution(
-            selected_options=["Queue", "Stack"],
-            confidence=0.94,
-            explanation="Queue (FIFO) and Stack (LIFO) are classic linear data structures.",
+            selected_options=["Queue", "Deque (Double-Ended Queue)"],
+            confidence=0.96,
+            explanation="Queue operates on FIFO and Deque supports O(1) queue insertion/removal.",
         )
     if response_schema == TrueFalseSolution:
         return TrueFalseSolution(
             value=True,
             confidence=1.0,
-            explanation="TCP requires a three-way handshake and is connection-oriented.",
+            explanation="HTTP is a stateless application-layer protocol.",
         )
     if response_schema == FillInBlankSolution:
         return FillInBlankSolution(
