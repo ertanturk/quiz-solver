@@ -273,3 +273,55 @@ def test_fill_unsupported_question_type(quiz_page: Page):
     mock_solution.question_type = "unsupported_type"
     with pytest.raises(UnsupportedQuestionTypeError, match="Unsupported question type"):
         fill_question(card, mock_solution)
+
+
+# --- Real Assessment Fixture Tests ---
+
+VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View Assessment.html"
+VIEW_ASSESSMENT_URL = f"file://{VIEW_ASSESSMENT_PATH.resolve()}"
+
+
+def test_fill_view_assessment_questions(browser: Browser):
+    page = browser.new_page()
+    page.goto(VIEW_ASSESSMENT_URL)
+
+    cards = page.locator(".assessment-question").all()
+    assert len(cards) == 20
+
+    # Fill Q1 with correct target option text
+    card1 = cards[0]
+    sol1 = SingleChoiceSolution(
+        question_id="q1",
+        selected_option="To compare how algorithms grow in resource usage as input size increases",
+        explanation="Definition of asymptotic analysis",
+    )
+    assert fill_question(card1, sol1) is True
+
+    # Check that option 5 radio in card 1 is checked
+    q1_labels = card1.locator("label").all()
+    assert q1_labels[4].locator('input[type="radio"]').first.is_checked() is True
+
+    # Fill Q2 with mathematical formula option
+    card2 = cards[1]
+    sol2 = SingleChoiceSolution(
+        question_id="q2",
+        selected_option="T(n) = 2T(n/2) + Θ(n)",
+        explanation="Standard recurrence for merge sort",
+    )
+    assert fill_question(card2, sol2) is True
+
+    q2_labels = card2.locator("label").all()
+    assert q2_labels[2].locator('input[type="radio"]').first.is_checked() is True
+
+    # Also test option index/letter fallback on Q3
+    card3 = cards[2]
+    sol3 = SingleChoiceSolution(
+        question_id="q3",
+        selected_option="Option B",
+        explanation="Testing option letter fallback",
+    )
+    assert fill_question(card3, sol3) is True
+    q3_labels = card3.locator("label").all()
+    assert q3_labels[1].locator('input[type="radio"]').first.is_checked() is True
+
+    page.close()

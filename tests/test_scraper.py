@@ -330,3 +330,43 @@ def test_scrape_question_screenshot_failure_continues(quiz_page: Page, log_captu
         in r.getMessage()
         for r in log_capture
     )
+
+
+# --- Real Assessment Fixture Tests ---
+
+VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View Assessment.html"
+VIEW_ASSESSMENT_URL = f"file://{VIEW_ASSESSMENT_PATH.resolve()}"
+
+
+def test_view_assessment_detects_exactly_20_questions(browser: Browser):
+    page = browser.new_page()
+    page.goto(VIEW_ASSESSMENT_URL)
+
+    elements = find_question_elements(page)
+    # Must detect exactly 20 questions, NOT 80 from nested class*="question" matches
+    assert len(elements) == 20
+
+    contexts = scrape_quiz(page, capture_screenshots=False)
+    assert len(contexts) == 20
+
+    for idx, ctx in enumerate(contexts, start=1):
+        assert ctx.order == idx
+        assert ctx.question_type == QuestionType.SINGLE_CHOICE
+        assert ctx.points == 5.0
+        assert len(ctx.prompt) > 0, f"Question #{idx} prompt was empty"
+        assert len(ctx.options) >= 4, f"Question #{idx} had fewer than 4 options"
+        # Verify options do not contain artifacts like 'Option A' or 'Selected'
+        for opt in ctx.options:
+            assert not opt.startswith("Option "), f"Option contained letter prefix: {opt}"
+            assert not opt.endswith("Selected"), f"Option contained 'Selected': {opt}"
+
+    # Specific check on question 1 prompt and options
+    q1 = contexts[0]
+    assert "purpose of asymptotic analysis" in q1.prompt
+    assert "To determine the memory footprint for small inputs" in q1.options
+    assert (
+        "To compare how algorithms grow in resource usage as input size increases"
+        in q1.options
+    )
+
+    page.close()

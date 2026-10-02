@@ -31,7 +31,20 @@ logger = get_logger(__name__)
 
 def _normalize_str(s: str) -> str:
     """Normalize string for case-insensitive, whitespace-insensitive comparison."""
-    clean = re.sub(r"^[A-Za-z0-9][\.\)\s]+\s*", "", s.strip())
+    clean = s.strip()
+    stripped_prefix = re.sub(
+        r"^(?:option\s+[a-z0-9]+|[a-z0-9][\.\)\s]+)\s*",
+        "",
+        clean,
+        flags=re.IGNORECASE,
+    ).strip()
+    if stripped_prefix:
+        clean = stripped_prefix
+
+    stripped_selected = re.sub(r"\s+selected$", "", clean, flags=re.IGNORECASE).strip()
+    if stripped_selected:
+        clean = stripped_selected
+
     return re.sub(r"\s+", " ", clean).strip().lower()
 
 
@@ -51,6 +64,12 @@ def _click_choice_element(choice_item: Locator, input_element: Locator | None = 
         try:
             choice_item.click(force=True)
         except PlaywrightError as e:
+            if input_element is not None:
+                try:
+                    input_element.check(force=True)
+                    return
+                except PlaywrightError:
+                    pass
             logger.error("Failed to click choice element: %s", e)
             raise ElementNotInteractableError(f"Failed to interact with choice element: {e}") from e
 
@@ -60,12 +79,14 @@ def _fill_single_choice(card: Locator, target_option: str) -> None:
     norm_target = _normalize_str(target_option)
 
     # Tier 1: Look for .choice-item or label containing target text
-    choice_items = card.locator(".choice-item, li[data-choice-value], label.choice-label").all()
+    choice_items = card.locator(
+        ".choice-item, li[data-choice-value], label.choice-label, label[class*='answerOption'], label.MuiFormControlLabel-root, label"
+    ).all()
     # 1a: Exact match
     for item in choice_items:
         data_val = _normalize_str(item.get_attribute("data-choice-value") or "")
         choice_text = ""
-        ct = item.locator(".choice-text").first
+        ct = item.locator(".choice-text, [class*='answerOptionText'], .ql-editor").first
         if ct.count() > 0:
             choice_text = _normalize_str(ct.inner_text())
         else:
@@ -86,7 +107,7 @@ def _fill_single_choice(card: Locator, target_option: str) -> None:
     for item in choice_items:
         data_val = _normalize_str(item.get_attribute("data-choice-value") or "")
         choice_text = ""
-        ct = item.locator(".choice-text").first
+        ct = item.locator(".choice-text, [class*='answerOptionText'], .ql-editor").first
         if ct.count() > 0:
             choice_text = _normalize_str(ct.inner_text())
         else:
@@ -95,7 +116,7 @@ def _fill_single_choice(card: Locator, target_option: str) -> None:
         for candidate in (choice_text, data_val):
             if (
                 candidate
-                and (norm_target.startswith(candidate) or candidate.startswith(norm_target))
+                and (norm_target in candidate or candidate in norm_target)
                 and len(candidate) > best_len
             ):
                 best_len = len(candidate)
@@ -109,6 +130,21 @@ def _fill_single_choice(card: Locator, target_option: str) -> None:
             with contextlib.suppress(Exception):
                 radio_loc.dispatch_event("change")
         return
+
+    # 1c: Fallback by option index/letter (e.g. 'A', 'Option A', '1')
+    match_letter = re.match(r"^(?:option\s+)?([a-e]|[1-9])$", target_option.strip(), re.IGNORECASE)
+    if match_letter and choice_items:
+        token = match_letter.group(1).lower()
+        idx = ord(token) - ord("a") if token.isalpha() else int(token) - 1
+        if 0 <= idx < len(choice_items):
+            item = choice_items[idx]
+            radio = item.locator("input[type='radio']").first
+            radio_loc = radio if radio.count() > 0 else None
+            _click_choice_element(item, radio_loc)
+            if radio_loc is not None:
+                with contextlib.suppress(Exception):
+                    radio_loc.dispatch_event("change")
+            return
 
     # Tier 2: Accessible role match
     try:
@@ -126,9 +162,7 @@ def _fill_single_choice(card: Locator, target_option: str) -> None:
     radios = card.locator("input[type='radio']").all()
     for r in radios:
         val = _normalize_str(r.get_attribute("value") or "")
-        if norm_target == val or (
-            val and (norm_target.startswith(val) or val.startswith(norm_target))
-        ):
+        if val and (norm_target == val or norm_target.startswith(val) or val.startswith(norm_target)):
             r.check(force=True)
             r.dispatch_event("change")
             return
@@ -141,11 +175,14 @@ def _fill_true_false(card: Locator, value: bool) -> None:
     target_names = ["true", "doğru", "t"] if value else ["false", "yanlış", "f"]
 
     # Search through available radios and labels
-    choice_items = card.locator(".choice-item, label").all()
+    choice_items = card.locator(
+        ".choice-item, label.choice-label, label[class*='answerOption'], label.MuiFormControlLabel-root, label"
+    ).all()
     for item in choice_items:
-        text = _normalize_str(item.inner_text())
+        ct = item.locator(".choice-text, [class*='answerOptionText'], .ql-editor").first
+        text = _normalize_str(ct.inner_text()) if ct.count() > 0 else _normalize_str(item.inner_text())
         val = _normalize_str(item.get_attribute("data-choice-value") or "")
-        if any(t in (text, val) for t in target_names):
+        if any(t in (text, val) for t in target_names) or any(t == text or t == val for t in target_names):
             radio = item.locator("input[type='radio']").first
             radio_loc = radio if radio.count() > 0 else None
             _click_choice_element(item, radio_loc)
@@ -171,19 +208,29 @@ def _fill_multiple_choice(card: Locator, selected_options: list[str]) -> None:
     """Check matching checkboxes and uncheck non-matching ones."""
     norm_targets = {_normalize_str(opt) for opt in selected_options}
 
-    choice_items = card.locator(".choice-item, label.choice-label").all()
+    choice_items = card.locator(
+        ".choice-item, label.choice-label, label[class*='answerOption'], label.MuiFormControlLabel-root, label"
+    ).all()
     checkboxes_processed = 0
     if choice_items:
         for item in choice_items:
             data_val = _normalize_str(item.get_attribute("data-choice-value") or "")
             choice_text = ""
-            ct = item.locator(".choice-text").first
+            ct = item.locator(".choice-text, [class*='answerOptionText'], .ql-editor").first
             if ct.count() > 0:
                 choice_text = _normalize_str(ct.inner_text())
             else:
                 choice_text = _normalize_str(item.inner_text())
 
-            should_be_checked = (data_val in norm_targets) or (choice_text in norm_targets)
+            should_be_checked = (
+                (data_val and data_val in norm_targets)
+                or (choice_text and choice_text in norm_targets)
+                or any(
+                    (data_val and (data_val.startswith(t) or t.startswith(data_val)))
+                    or (choice_text and (choice_text.startswith(t) or t.startswith(choice_text)))
+                    for t in norm_targets
+                )
+            )
             cb = item.locator("input[type='checkbox']").first
             if cb.count() > 0:
                 checkboxes_processed += 1

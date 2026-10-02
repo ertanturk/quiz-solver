@@ -17,6 +17,7 @@ logger = get_logger(__name__)
 # Candidate selectors for Blackboard question containers in order of precision
 QUESTION_SELECTORS: list[str] = [
     '[data-analytics-id="question-container"]',
+    ".assessment-question",
     "article.question-card",
     "div.question-card",
     ".element-card",
@@ -24,7 +25,31 @@ QUESTION_SELECTORS: list[str] = [
     'div[class*="question"]',
 ]
 
-POINTS_REGEX = re.compile(r"(\d+(?:\.\d+)?)\s*(?:points)", re.IGNORECASE)
+POINTS_REGEX = re.compile(r"(\d+(?:\.\d+)?)\s*(?:points?)", re.IGNORECASE)
+
+
+def _filter_top_level_elements(page: Page, selector: str) -> list[Locator]:
+    """Filter out locators that are descendants of another matched element."""
+    locator = page.locator(selector)
+    count = locator.count()
+    if count <= 1:
+        return locator.all()
+    try:
+        import json
+
+        indices = page.evaluate(
+            f"""() => {{
+                const all = Array.from(document.querySelectorAll({json.dumps(selector)}));
+                return all
+                    .map((el, i) => (!all.some(other => other !== el && other.contains(el)) ? i : -1))
+                    .filter(i => i !== -1);
+            }}"""
+        )
+        if len(indices) == count:
+            return locator.all()
+        return [locator.nth(i) for i in indices]
+    except Exception:
+        return locator.all()
 
 
 def find_question_elements(page: Page, wait_timeout_ms: int = 0) -> list[Locator]:
@@ -44,8 +69,14 @@ def find_question_elements(page: Page, wait_timeout_ms: int = 0) -> list[Locator
         locator = page.locator(selector)
         count = locator.count()
         if count > 0:
-            logger.debug("Located %d question container(s) using '%s'", count, selector)
-            return locator.all()
+            top_level = _filter_top_level_elements(page, selector)
+            logger.debug(
+                "Located %d question container(s) (from %d matches) using '%s'",
+                len(top_level),
+                count,
+                selector,
+            )
+            return top_level
 
     if wait_timeout_ms > 0:
         combined = ", ".join(QUESTION_SELECTORS)
@@ -60,12 +91,14 @@ def find_question_elements(page: Page, wait_timeout_ms: int = 0) -> list[Locator
                 locator = page.locator(selector)
                 count = locator.count()
                 if count > 0:
+                    top_level = _filter_top_level_elements(page, selector)
                     logger.debug(
                         "Located %d question container(s) after wait using '%s'",
+                        len(top_level),
                         count,
                         selector,
                     )
-                    return locator.all()
+                    return top_level
         except PlaywrightError:
             pass
 
@@ -82,13 +115,26 @@ def extract_question_id(element: Locator, order: int) -> str:
                 return val.strip()
         except PlaywrightError:
             continue
+
+    try:
+        val = element.get_attribute("auto-save-context-id")
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+        form_el = element.locator("form[auto-save-context-id]").first
+        if form_el.count() > 0:
+            form_val = form_el.get_attribute("auto-save-context-id")
+            if isinstance(form_val, str) and form_val.strip():
+                return form_val.strip()
+    except PlaywrightError:
+        pass
+
     return f"question_{order}"
 
 
 def extract_points(element: Locator) -> float | None:
     """Extract point value assigned to the question."""
     try:
-        badge = element.locator(".points-badge, [class*='points']").first
+        badge = element.locator(".points-badge, .point-value, [class*='point']").first
         if badge.count() > 0:
             text = badge.inner_text().strip()
             match = POINTS_REGEX.search(text)
@@ -96,7 +142,7 @@ def extract_points(element: Locator) -> float | None:
                 return float(match.group(1))
 
         # Fallback to whole card text for points indicator
-        header = element.locator(".question-card-header").first
+        header = element.locator(".question-card-header, .question-header").first
         if header.count() > 0:
             text = header.inner_text().strip()
             match = POINTS_REGEX.search(text)
@@ -171,12 +217,14 @@ def detect_question_type(element: Locator) -> QuestionType:
 def extract_prompt(element: Locator) -> str:
     """Extract question text prompt."""
     try:
-        prompt_el = element.locator(".question-prompt, [id$='-prompt'], [class*='prompt']").first
+        prompt_el = element.locator(
+            "[id*='question-text'], .question-prompt, [id$='-prompt'], .question-content .ql-editor, [class*='prompt']"
+        ).first
         if prompt_el.count() > 0:
             return prompt_el.inner_text().strip()
 
         # Fallback to header or aria-label
-        header = element.locator(".question-card-header").first
+        header = element.locator(".question-card-header, .question-header").first
         if header.count() > 0:
             return header.inner_text().strip()
 
@@ -199,20 +247,29 @@ def extract_options(element: Locator, question_type: QuestionType) -> list[str]:
         return []
 
     try:
-        # Prefer .choice-text to exclude letter badges like 'A', 'B'
-        choice_elements = element.locator(".choice-text").all()
+        # Prefer specific choice text containers (e.g. .choice-text or Blackboard Ultra [class*='answerOptionText'])
+        choice_elements = element.locator(
+            ".choice-text, [class*='answerOptionText'], [class*='answerOption'] .ql-editor"
+        ).all()
         if choice_elements:
             texts = [el.inner_text().strip() for el in choice_elements]
             filtered = [t for t in texts if t]
             if filtered:
                 return filtered
 
-        # Fallback to label inner text, stripping leading letters (e.g. 'A.', 'B)')
+        # Fallback to label inner text, stripping leading letters (e.g. 'A.', 'B)', 'Option A')
         label_elements = element.locator(".choice-label, label").all()
-        labels = [el.inner_text().strip() for el in label_elements]
         cleaned = []
-        for text in labels:
-            stripped = re.sub(r"^[A-Za-z0-9][\.\)\s]+\s*", "", text).strip()
+        for el in label_elements:
+            inner = el.locator(".choice-text, [class*='answerOptionText'], .ql-editor").first
+            text = inner.inner_text().strip() if inner.count() > 0 else el.inner_text().strip()
+            stripped = re.sub(
+                r"^(?:option\s+[a-z0-9]+|[a-z0-9][\.\)\s]+)\s*",
+                "",
+                text,
+                flags=re.IGNORECASE,
+            ).strip()
+            stripped = re.sub(r"\s+selected$", "", stripped, flags=re.IGNORECASE).strip()
             if stripped:
                 cleaned.append(stripped)
             elif text:
