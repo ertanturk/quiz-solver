@@ -450,6 +450,7 @@ def test_main_demo_dispatch():
             headless=True,
             slowmo=0.1,
             verbose=False,
+            path=None,
         )
 
 
@@ -464,4 +465,125 @@ def test_main_demo_dispatch_with_mock():
             headless=True,
             slowmo=0.0,
             verbose=False,
+            path=None,
         )
+
+
+def test_parser_demo_flags():
+    """Verify demo command argument parsing with defaults and -p/--path flag."""
+    parser = build_parser()
+
+    # Defaults
+    args = parser.parse_args(["demo"])
+    assert args.command == "demo"
+    assert args.path is None
+
+    # Custom short flag
+    short_args = parser.parse_args(["demo", "-p", "tests/fixtures/custom.html"])
+    assert short_args.path == "tests/fixtures/custom.html"
+
+    # Custom long flag
+    long_args = parser.parse_args(["demo", "--path", "/tmp/bb_quiz.html"])
+    assert long_args.path == "/tmp/bb_quiz.html"
+
+
+def test_main_demo_dispatch_with_path():
+    """Verify main dispatches demo subcommand with -p flag."""
+    with patch("qs.cli.demo.run_demo", return_value=0) as mock_demo:
+        code = main(["demo", "-p", "tests/fixtures/custom.html", "--headless"])
+        assert code == 0
+        mock_demo.assert_called_once_with(
+            mock=False,
+            live=True,
+            headless=True,
+            slowmo=0.1,
+            verbose=False,
+            path="tests/fixtures/custom.html",
+        )
+
+
+@patch("qs.cli.demo.BrowserSession")
+def test_demo_command_custom_path_success(mock_session_cls, tmp_path):
+    """Verify run_demo loads custom HTML fixture specified via path."""
+    from qs.cli.demo import run_demo
+
+    custom_fixture = tmp_path / "custom_quiz.html"
+    custom_fixture.write_text("<html><body><p>Mock Blackboard Quiz</p></body></html>")
+
+    mock_session = MagicMock()
+    mock_session_cls.return_value = mock_session
+
+    code = run_demo(live=False, headless=True, slowmo=0.0, path=custom_fixture)
+    assert code == 0
+    mock_session.goto.assert_called_once_with(f"file://{custom_fixture.resolve()}")
+
+
+def test_demo_command_custom_path_nonexistent(tmp_path):
+    """Verify run_demo returns error code 1 when custom path does not exist."""
+    from qs.cli.demo import run_demo
+
+    nonexistent = tmp_path / "does_not_exist.html"
+    code = run_demo(live=False, headless=True, slowmo=0.0, path=nonexistent)
+    assert code == 1
+
+
+def test_parser_run_speed_flags():
+    """Verify parser accepts speed and rate limit flags for run command."""
+    parser = build_parser()
+    args = parser.parse_args([
+        "run",
+        "--fast",
+        "-b", "10",
+        "--paid-tier",
+        "--no-rate-limit",
+        "--vision", "never",
+    ])
+    assert args.fast is True
+    assert args.batch_size == 10
+    assert args.paid_tier is True
+    assert args.no_rate_limit is True
+    assert args.vision == "never"
+
+
+@patch("qs.credentials.Credentials.get_api_key", return_value="AIzaSy" + "A" * 33)
+@patch("builtins.input", side_effect=["\n", "\n"])
+@patch("qs.cli.app.BrowserSession")
+@patch("qs.app.service.QuizSolverService.solve_quiz")
+@patch("qs.cli.app.GeminiService")
+def test_handle_run_with_speed_flags_dispatches_properly(
+    mock_gemini_cls,
+    mock_solve,
+    mock_session_cls,
+    mock_input,
+    mock_key,
+):
+    """Verify handle_run configures GeminiService and QuizSolverService with speed options."""
+    mock_session = MagicMock()
+    mock_session_cls.return_value = mock_session
+    mock_solve.return_value = QuizBatchResult(
+        total_questions=1,
+        successful_fills=1,
+        failed_fills=0,
+        results=[],
+        status="completed",
+    )
+
+    parser = build_parser()
+    args = parser.parse_args([
+        "run",
+        "--headless",
+        "--fast",
+        "--batch-size", "8",
+        "--paid-tier",
+        "--vision", "never",
+    ])
+    code = handle_run(args)
+    assert code == 0
+
+    # Verify GeminiService was instantiated with fast model and paid tier
+    mock_gemini_cls.assert_called_once()
+    _, kwargs = mock_gemini_cls.call_args
+    assert kwargs["paid_tier"] is True
+    assert kwargs["model"] == "gemini-2.5-flash-lite"
+
+

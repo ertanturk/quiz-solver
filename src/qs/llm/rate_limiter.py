@@ -14,7 +14,14 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from qs.config import FREE_TIER_RPD, FREE_TIER_RPM, FREE_TIER_TPM
+from qs.config import (
+    FREE_TIER_RPD,
+    FREE_TIER_RPM,
+    FREE_TIER_TPM,
+    PAID_TIER_RPD,
+    PAID_TIER_RPM,
+    PAID_TIER_TPM,
+)
 from qs.errors.exceptions import LLMRateLimitError
 from qs.logger import get_logger
 
@@ -71,7 +78,9 @@ class RateLimiter:
         rpd: int = FREE_TIER_RPD,
         clock: Callable[[], float] = time.monotonic,
         sleep_fn: Callable[[float], None] = time.sleep,
+        enabled: bool = True,
     ) -> None:
+        self.enabled = enabled
         self.rpm = rpm
         self.tpm = tpm
         self.rpd = rpd
@@ -83,6 +92,27 @@ class RateLimiter:
         self._requests_window: collections.deque[tuple[float, int]] = collections.deque()
         # Sliding 24-hour (86400s) window: entries are timestamps
         self._daily_requests: collections.deque[float] = collections.deque()
+
+    @classmethod
+    def create_paid_tier(
+        cls,
+        clock: Callable[[], float] = time.monotonic,
+        sleep_fn: Callable[[float], None] = time.sleep,
+    ) -> RateLimiter:
+        """Create a RateLimiter preconfigured with Paid Tier quotas (1000 RPM, 4M TPM)."""
+        return cls(
+            rpm=PAID_TIER_RPM,
+            tpm=PAID_TIER_TPM,
+            rpd=PAID_TIER_RPD,
+            clock=clock,
+            sleep_fn=sleep_fn,
+            enabled=True,
+        )
+
+    @classmethod
+    def create_disabled(cls) -> RateLimiter:
+        """Create a no-op RateLimiter that never throttles."""
+        return cls(enabled=False)
 
     def _purge_expired(self, now: float) -> None:
         """Purge entries outside the sliding 60s and 24h windows."""
@@ -102,6 +132,9 @@ class RateLimiter:
         Raises:
             LLMRateLimitError: If daily request quota (RPD) is exceeded.
         """
+        if not self.enabled:
+            return
+
         while True:
             sleep_duration = 0.0
             with self._lock:
@@ -175,6 +208,7 @@ class RateLimiter:
             self._purge_expired(now)
             current_tokens = sum(t for _, t in self._requests_window)
             return {
+                "enabled": self.enabled,
                 "rpm_limit": self.rpm,
                 "rpm_used": len(self._requests_window),
                 "rpm_remaining": max(0, self.rpm - len(self._requests_window)),

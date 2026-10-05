@@ -334,7 +334,9 @@ def test_scrape_question_screenshot_failure_continues(quiz_page: Page, log_captu
 
 # --- Real Assessment Fixture Tests ---
 
-VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View Assessment.html"
+VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View_Assessment.html"
+if not VIEW_ASSESSMENT_PATH.exists():
+    VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View Assessment.html"
 VIEW_ASSESSMENT_URL = f"file://{VIEW_ASSESSMENT_PATH.resolve()}"
 
 
@@ -370,3 +372,46 @@ def test_view_assessment_detects_exactly_20_questions(browser: Browser):
     )
 
     page.close()
+
+
+def test_has_visual_content_detection(browser: Browser):
+    """Verify has_visual_content returns True for media/math elements and False for plain text."""
+    from qs.scraper.scraper import has_visual_content
+
+    page = browser.new_page()
+    page.goto(
+        """data:text/html,
+        <div id="q_plain"><p>Simple text question</p></div>
+        <div id="q_img"><p>Image question</p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" /></div>
+        <div id="q_svg"><p>SVG question</p><svg><circle cx="5" cy="5" r="5"></circle></svg></div>
+        <div id="q_math"><p>Math question</p><math><mrow><mi>x</mi></mrow></math></div>
+        """
+    )
+    assert has_visual_content(page.locator("#q_plain")) is False
+    assert has_visual_content(page.locator("#q_img")) is True
+    assert has_visual_content(page.locator("#q_svg")) is True
+    assert has_visual_content(page.locator("#q_math")) is True
+    page.close()
+
+
+def test_adaptive_vision_skips_screenshots_on_text_questions(quiz_page: Page):
+    """Verify adaptive vision skips capturing screenshots when question text is fully extracted."""
+    from qs.scraper.scraper import Scraper
+
+    scraper = Scraper(vision_mode="adaptive")
+    contexts = scraper.scrape_quiz(quiz_page)
+    assert len(contexts) == 6
+    # All 6 questions in fixture have full DOM text and no images -> screenshots skipped
+    for c in contexts:
+        assert c.screenshot_bytes is None
+
+
+def test_capture_question_screenshot_jpeg(browser: Browser):
+    """Verify capture_question_screenshot supports jpeg compression."""
+    page = browser.new_page()
+    page.goto("""data:text/html,<div id="target" style="width:100px;height:100px;background:red;">Box</div>""")
+    el = page.locator("#target")
+    jpeg_bytes = capture_question_screenshot(el, image_format="jpeg", quality=70)
+    assert jpeg_bytes.startswith(b"\xff\xd8")  # JPEG magic bytes
+    page.close()
+

@@ -104,6 +104,9 @@ uv run qs demo --headless
 
 # Offline mode without API calls
 uv run qs demo --mock
+
+# Custom HTML fixture file
+uv run qs demo -p path/to/fixture.html
 ```
 
 ## Supported Question Types

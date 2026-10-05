@@ -176,19 +176,22 @@ def run_demo(
     headless: bool = False,
     slowmo: float = 0.1,
     verbose: bool = False,
+    path: str | Path | None = None,
 ) -> int:
     """Run full quiz-solver demo showing all pipeline stages on Blackboard fixture."""
     setup_logger(verbose=verbose)
     print_banner()
 
-    if not FIXTURE_PATH.exists():
-        console.print(f"[error]Fixture file not found: {FIXTURE_PATH}[/error]")
+    target_fixture = Path(path).resolve() if path else FIXTURE_PATH
+    if not target_fixture.exists():
+        console.print(f"[error]Fixture file not found: {target_fixture}[/error]")
         return 1
 
+    fixture_url = f"file://{target_fixture.resolve()}"
     use_ai = live and not mock
 
     console.print("[bold white]Blackboard Assessment Demo[/bold white]")
-    console.print(f"[muted]Fixture:[/] {FIXTURE_PATH.name}")
+    console.print(f"[muted]Fixture:[/] {target_fixture.name}")
 
     gemini_service: GeminiService | MagicMock
     if use_ai:
@@ -219,7 +222,7 @@ def run_demo(
     try:
         session.open()
         console.print("Navigating to Blackboard quiz fixture...")
-        session.goto(FIXTURE_URL)
+        session.goto(fixture_url)
         console.print("[success]Blackboard quiz page loaded.[/success]\n")
 
         if not headless:
@@ -355,6 +358,13 @@ def main() -> int:
         help="Delay between question fills (default: 0.1s)",
     )
     parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        default=None,
+        help="Path to HTML fixture file to test (default: tests/fixtures/blackboard_quiz.html)",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -368,6 +378,7 @@ def main() -> int:
         headless=args.headless,
         slowmo=args.slowmo,
         verbose=args.verbose,
+        path=args.path,
     )
 
 

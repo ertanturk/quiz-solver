@@ -343,10 +343,31 @@ def extract_matching_data(element: Locator) -> tuple[list[str], list[str]]:
     return prompts, options
 
 
-def capture_question_screenshot(element: Locator, timeout: float = 10000.0) -> bytes:
-    """Scroll question element into view and capture bounded PNG screenshot."""
+def has_visual_content(element: Locator) -> bool:
+    """Check if question element contains diagrams, equations, or media."""
+    try:
+        visual_loc = element.locator(
+            "img, svg, canvas, math, [class*='math'], [class*='formula'], [class*='katex'], [class*='MathJax'], [class*='chem']"
+        )
+        return visual_loc.count() > 0
+    except Exception:
+        return False
+
+
+def capture_question_screenshot(
+    element: Locator,
+    timeout: float = 10000.0,
+    image_format: str = "png",
+    quality: int = 75,
+) -> bytes:
+    """Scroll question element into view and capture bounded screenshot."""
     try:
         element.scroll_into_view_if_needed(timeout=timeout)
+        if image_format == "jpeg":
+            try:
+                return element.screenshot(type="jpeg", quality=quality, timeout=timeout)
+            except Exception:
+                return element.screenshot(type="png", timeout=timeout)
         return element.screenshot(type="png", timeout=timeout)
     except PlaywrightError as e:
         logger.error("Failed to capture question screenshot: %s", e)
@@ -358,16 +379,33 @@ class Scraper:
 
     def __init__(
         self,
-        capture_screenshots: bool = True,
+        capture_screenshots: bool | str = True,
+        vision_mode: str | None = None,
+        image_format: str = "png",
+        image_quality: int = 75,
         timeout: float = 10000.0,
     ) -> None:
         """Initialize scraper settings.
 
         Args:
-            capture_screenshots: Whether to capture element screenshots.
+            capture_screenshots: Whether to capture element screenshots, or vision mode string.
+            vision_mode: "adaptive" (text-first, screenshot on media/incomplete), "always", or "never".
+            image_format: "png" or "jpeg".
+            image_quality: JPEG compression quality (1-100).
             timeout: Timeout in milliseconds for Playwright element actions.
         """
-        self.capture_screenshots = capture_screenshots
+        if vision_mode is not None:
+            self.vision_mode = vision_mode
+        elif isinstance(capture_screenshots, str):
+            self.vision_mode = capture_screenshots
+        elif capture_screenshots is True:
+            self.vision_mode = "always"
+        else:
+            self.vision_mode = "never"
+
+        self.capture_screenshots = self.vision_mode != "never"
+        self.image_format = image_format
+        self.image_quality = image_quality
         self.timeout = timeout
 
     def scrape_question(
@@ -400,13 +438,31 @@ class Scraper:
         else:
             options = extract_options(element, q_type)
 
-        should_capture = (
-            capture_screenshot if capture_screenshot is not None else self.capture_screenshots
-        )
+        if capture_screenshot is False or self.vision_mode == "never":
+            need_screenshot = False
+        elif capture_screenshot is True or self.vision_mode == "always":
+            need_screenshot = True
+        else:
+            # "adaptive" vision: skip screenshot if text is complete and no visual media
+            has_media = has_visual_content(element)
+            missing_text = not prompt or not prompt.strip()
+            missing_options = (
+                q_type in (QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE) and not options
+            )
+            missing_matching = (
+                q_type == QuestionType.MATCHING and (not matching_prompts or not matching_options)
+            )
+            need_screenshot = has_media or missing_text or missing_options or missing_matching
+
         screenshot_bytes: bytes | None = None
-        if should_capture:
+        if need_screenshot:
             try:
-                screenshot_bytes = capture_question_screenshot(element, timeout=self.timeout)
+                screenshot_bytes = capture_question_screenshot(
+                    element,
+                    timeout=self.timeout,
+                    image_format=self.image_format,
+                    quality=self.image_quality,
+                )
             except ScreenshotCaptureError:
                 logger.warning(
                     "Screenshot capture failed for question '%s', proceeding without screenshot",
@@ -414,12 +470,13 @@ class Scraper:
                 )
 
         logger.debug(
-            "Scraped question #%d [id=%s, type=%s, options=%d, points=%s]",
+            "Scraped question #%d [id=%s, type=%s, options=%d, points=%s, screenshot=%s]",
             order,
             q_id,
             q_type,
             len(options),
             points,
+            screenshot_bytes is not None,
         )
 
         return QuestionContext(

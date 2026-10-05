@@ -20,12 +20,16 @@ from qs.cli.cli import (
 from qs.cli.theme import console
 from qs.config import (
     BB_LINK,
+    DEFAULT_BATCH_SIZE,
     DEFAULT_GEMINI_MODEL,
     DEFAULT_QUESTION_WAIT_TIMEOUT_MS,
+    DEFAULT_VISION_MODE,
+    FAST_GEMINI_MODEL,
 )
 from qs.credentials import Credentials
 from qs.errors.exceptions import MissingAPIKeyError
 from qs.llm.google import GeminiService
+from qs.llm.rate_limiter import RateLimiter
 from qs.logger import setup_logger
 from qs.models import QuestionExecutionResult
 
@@ -51,6 +55,34 @@ def build_parser() -> argparse.ArgumentParser:
         "--model",
         default=DEFAULT_GEMINI_MODEL,
         help=f"Gemini model (default: {DEFAULT_GEMINI_MODEL})",
+    )
+    run_parser.add_argument(
+        "--fast",
+        action="store_true",
+        help=f"Use low-latency fast model ({FAST_GEMINI_MODEL})",
+    )
+    run_parser.add_argument(
+        "-b",
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=f"Number of questions to batch per API call (default: {DEFAULT_BATCH_SIZE})",
+    )
+    run_parser.add_argument(
+        "--paid-tier",
+        action="store_true",
+        help="Use Paid Tier quota limits (1000 RPM instead of Free Tier 5 RPM)",
+    )
+    run_parser.add_argument(
+        "--no-rate-limit",
+        action="store_true",
+        help="Disable rate limiting throttling entirely",
+    )
+    run_parser.add_argument(
+        "--vision",
+        choices=["adaptive", "always", "never"],
+        default=DEFAULT_VISION_MODE,
+        help="Vision screenshot mode: adaptive (text-first, screenshot on media/math), always, or never (default: adaptive)",
     )
     run_parser.add_argument(
         "-t",
@@ -103,6 +135,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.1,
         help="Delay between question fills (default: 0.1s)",
+    )
+    demo_parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        default=None,
+        help="Path to HTML fixture file to test (default: tests/fixtures/blackboard_quiz.html)",
     )
     demo_parser.add_argument(
         "-v",
@@ -180,9 +219,25 @@ def handle_run(args: argparse.Namespace) -> int:
         # Execute vision solver
         console.print("\n[primary]Solving quiz...[/]")
 
+        chosen_model = FAST_GEMINI_MODEL if getattr(args, "fast", False) else args.model
+        paid_tier = getattr(args, "paid_tier", False)
+        no_rate_limit = getattr(args, "no_rate_limit", False)
+        batch_size = max(1, getattr(args, "batch_size", DEFAULT_BATCH_SIZE))
+        vision_mode = getattr(args, "vision", DEFAULT_VISION_MODE)
+
+        rate_limiter: RateLimiter | None | bool
+        if no_rate_limit:
+            rate_limiter = False
+        elif paid_tier:
+            rate_limiter = RateLimiter.create_paid_tier()
+        else:
+            rate_limiter = None
+
         gemini_service = GeminiService(
             api_key=api_key,
-            model=args.model,
+            model=chosen_model,
+            rate_limiter=rate_limiter,
+            paid_tier=paid_tier,
         )
 
         with console.status("Solving questions...", spinner="dots") as status:
@@ -193,12 +248,14 @@ def handle_run(args: argparse.Namespace) -> int:
 
             with QuizSolverService(
                 gemini_service=gemini_service,
-                capture_screenshots=True,
+                batch_size=batch_size,
+                vision_mode=vision_mode,
             ) as solver:
                 batch_result = solver.solve_quiz(
                     session.page,
                     wait_timeout_ms=DEFAULT_QUESTION_WAIT_TIMEOUT_MS,
                     on_question_complete=on_progress,
+                    batch_size=batch_size,
                 )
 
         # Display review table
@@ -247,6 +304,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             headless=args.headless,
             slowmo=args.slowmo,
             verbose=args.verbose,
+            path=args.path,
         )
 
     return 0

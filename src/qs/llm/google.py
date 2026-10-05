@@ -139,7 +139,8 @@ def validate_request(
         for idx, img in enumerate(raw_images):
             if not isinstance(img, bytes) or len(img) == 0:
                 raise LLMInferenceError(f"Image at index {idx} must be non-empty bytes")
-            normalized.append(types.Part.from_bytes(data=img, mime_type="image/png"))
+            mime = "image/jpeg" if img.startswith(b"\xff\xd8") else "image/png"
+            normalized.append(types.Part.from_bytes(data=img, mime_type=mime))
 
     if not normalized:
         raise LLMInferenceError("At least one prompt, image, or content item must be provided")
@@ -461,6 +462,7 @@ class GeminiService:
         max_retries: int = DEFAULT_MAX_RETRIES,
         initial_retry_delay: float = DEFAULT_INITIAL_RETRY_DELAY,
         rate_limiter: RateLimiter | None | bool = None,
+        paid_tier: bool = False,
     ) -> None:
         self.api_key = api_key
         self.model = model
@@ -471,6 +473,8 @@ class GeminiService:
             self.rate_limiter: RateLimiter | None = None
         elif isinstance(rate_limiter, RateLimiter):
             self.rate_limiter = rate_limiter
+        elif paid_tier:
+            self.rate_limiter = RateLimiter.create_paid_tier()
         else:
             self.rate_limiter = get_default_rate_limiter()
 

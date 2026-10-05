@@ -25,7 +25,7 @@ You are an expert, highly accurate automated exam-solving AI. Your task is to vi
 3.  **Fill in the Blank:** For fill_in_blank questions, provide an array containing the exact concise answer string for each blank (e.g. ["concise answer"]). Do NOT list synonyms, alternatives, or repeating variations.
 4.  **Visual Ground Truth:** If math formulas, code formatting, or diagrams in extracted text are incomplete, rely on the visual screenshot as ground truth.
 5.  **No Markdown Formatting:** You must output pure, raw JSON matching the schema without markdown blocks.
-6.  **Required Fields:** Every response must include a "confidence" score (0.0 to 1.0) and a brief "explanation" justifying your reasoning.
+6.  **Required Fields:** Every response must include a "confidence" score (0.0 to 1.0) and a brief "explanation" (keep ultra-short, 1-5 words max, e.g. "Standard definition", to maximize generation speed).
 7.  **For the essay question:** Write a clear, accurate, and well-structured response in the "response_text" field (around 2-3 sentences, 50-100 words) in simple student English. Output ONLY the direct answer text. Do NOT include conversational filler, greetings, pleasantries, or closing sign-offs (e.g. NEVER write 'I hope this helps' or 'Let me know if you have questions').
 
 8.  **For matching questions:** You MUST provide a matched pair for EVERY item listed under matching prompts.
@@ -89,7 +89,7 @@ BATCH_SYSTEM_INSTRUCTION = """\
 You are an expert, highly accurate automated exam-solving AI. Your task is to visually analyze screenshots of Blackboard Ultra quiz questions, read the provided semantic context (extracted text), and output solutions for ALL questions strictly as a JSON object matching the BatchSolution schema.
 
 ### CRITICAL RULES:
-1.  **Exact Text Matching Only:** For single_choice and multiple_choice, you MUST return ONLY the exact option text verbatim as listed in the available options under "selected_option" or "selected_options". Do NOT include numbers (e.g. '1.', '2.'), prefixes, or commentary. Keep reasoning strictly in the "explanation" field.
+1.  **Exact Text Matching Only:** For single_choice and multiple_choice, you MUST return ONLY the exact option text verbatim as listed in the available options under "selected_option" or "selected_options". Do NOT include numbers (e.g. '1.', '2.'), prefixes, or commentary. Keep reasoning strictly in the "explanation" field (ultra-short, 1-5 words max, to maximize generation speed).
 2.  **True/False Boolean Value:** For true_false questions, output the answer under "bool_value" as a JSON boolean (true or false).
 3.  **Fill in the Blank:** For fill_in_blank questions, provide an array under "fill_blanks" containing the exact concise answer string for each blank.
 4.  **Matching Questions:** Output "matching_pairs" as a list of {"prompt": "...", "option": "..."} pairs for EVERY item listed under matching prompts.

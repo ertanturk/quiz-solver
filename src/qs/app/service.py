@@ -45,12 +45,20 @@ class QuizSolverService:
         scraper: Scraper | None = None,
         filler: Filler | None = None,
         capture_screenshots: bool = True,
+        vision_mode: str = "adaptive",
         batch_size: int = DEFAULT_BATCH_SIZE,
     ) -> None:
         self.gemini_service = gemini_service or GeminiService()
-        self.scraper = scraper or Scraper(capture_screenshots=capture_screenshots)
+        if scraper is not None:
+            self.scraper = scraper
+        else:
+            self.scraper = Scraper(
+                capture_screenshots=capture_screenshots,
+                vision_mode=vision_mode,
+            )
         self.filler = filler or Filler()
         self.capture_screenshots = capture_screenshots
+        self.vision_mode = vision_mode
         self.batch_size = max(1, batch_size)
         self._owns_gemini_service = gemini_service is None
 
@@ -630,9 +638,14 @@ def solve_quiz(
     on_question_complete: Callable[[QuestionExecutionResult, int, int], None] | None = None,
     on_stage: Callable[[str, dict[str, Any]], None] | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
+    vision_mode: str = "adaptive",
 ) -> QuizBatchResult:
     """Solve all quiz questions on the page using QuizSolverService."""
-    with QuizSolverService(gemini_service=gemini_service, batch_size=batch_size) as service:
+    with QuizSolverService(
+        gemini_service=gemini_service,
+        batch_size=batch_size,
+        vision_mode=vision_mode,
+    ) as service:
         return service.solve_quiz(
             page,
             wait_timeout_ms=wait_timeout_ms,

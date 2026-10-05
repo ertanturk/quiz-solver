@@ -237,3 +237,27 @@ def test_global_rate_limiter_accessor():
 
     # Restore original
     set_default_rate_limiter(orig)
+
+
+def test_rate_limiter_create_paid_tier():
+    """Verify create_paid_tier initializes with paid tier limits."""
+    limiter = RateLimiter.create_paid_tier()
+    assert limiter.enabled is True
+    assert limiter.rpm == 1000
+    assert limiter.tpm == 4_000_000
+    assert limiter.rpd == 100_000
+
+
+def test_rate_limiter_disabled_does_not_block():
+    """Verify disabled rate limiter never sleeps or blocks requests."""
+    clock = FakeClock()
+    limiter = RateLimiter(enabled=False, rpm=1, clock=clock.now, sleep_fn=clock.sleep)
+
+    # Acquire 100 times without delay or exception
+    for _ in range(100):
+        limiter.acquire(tokens=10_000)
+
+    assert clock.sleep_history == []
+    stats = limiter.get_stats()
+    assert stats["enabled"] is False
+

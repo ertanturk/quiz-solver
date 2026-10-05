@@ -107,13 +107,20 @@ def _format_solution_answer(sol: object) -> str:
     return str(sol)
 
 
-def run_recorded_demo() -> int:
+def run_recorded_demo(path: str | Path | None = None) -> int:
     """Run quiz-solver demo while recording browser to video."""
     setup_logger(verbose=False)
     print_banner()
 
+    target_fixture = Path(path).resolve() if path else FIXTURE_PATH
+    if not target_fixture.exists():
+        console.print(f"[error]Fixture file not found: {target_fixture}[/error]")
+        return 1
+
+    fixture_url = f"file://{target_fixture.resolve()}"
+
     console.print("[bold white]Blackboard Assessment Demo[/bold white]")
-    console.print(f"[muted]Fixture:[/] {FIXTURE_PATH.name}")
+    console.print(f"[muted]Fixture:[/] {target_fixture.name}")
     try:
         api_key = Credentials.get_api_key()
         gemini_service = GeminiService(api_key=api_key)
@@ -153,7 +160,8 @@ def run_recorded_demo() -> int:
 
     try:
         console.print("Navigating to Blackboard quiz fixture...")
-        page.goto(FIXTURE_URL)
+        session_url = fixture_url
+        page.goto(session_url)
         console.print("[success]Blackboard quiz page loaded.[/success]\n")
         time.sleep(0.6)
 
@@ -281,5 +289,23 @@ def run_recorded_demo() -> int:
             )
 
 
+def main() -> int:
+    """CLI entry point for recorded demo script."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Demo runner with synchronized Playwright browser recording"
+    )
+    parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        default=None,
+        help="Path to HTML fixture file to test (default: tests/fixtures/blackboard_quiz.html)",
+    )
+    args = parser.parse_args()
+    return run_recorded_demo(path=args.path)
+
+
 if __name__ == "__main__":
-    sys.exit(run_recorded_demo())
+    sys.exit(main())

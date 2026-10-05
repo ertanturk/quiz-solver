@@ -277,7 +277,9 @@ def test_fill_unsupported_question_type(quiz_page: Page):
 
 # --- Real Assessment Fixture Tests ---
 
-VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View Assessment.html"
+VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View_Assessment.html"
+if not VIEW_ASSESSMENT_PATH.exists():
+    VIEW_ASSESSMENT_PATH = Path(__file__).parent / "fixtures" / "View Assessment.html"
 VIEW_ASSESSMENT_URL = f"file://{VIEW_ASSESSMENT_PATH.resolve()}"
 
 
